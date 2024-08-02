@@ -36,13 +36,12 @@ class SQLite {
         await db.execute(
             'CREATE TABLE ESTOQUE_MAT_MOV('
                 'movimentacao INTEGER PRIMARY KEY AUTOINCREMENT,'
-                'filial VARCHAR(25) NOT NULL,'
-                'data DATETIME(23) NOT NULL,'
+                'data DATETIME NOT NULL,'
                 'usuario VARCHAR(25) NOT NULL,'
                 'origem VARCHAR(8) NOT NULL,'
                 'destino VARCHAR(8),'
-                'total_pecas INT,'
-                'status VARCHAR(25))'
+                'total_pecas INT NOT NULL,'
+                'status VARCHAR(25) NOT NULL)'
         );
 
         await db.execute(

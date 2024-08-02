@@ -2,12 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/provedores/origem_destino.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
+import 'package:AppEstoqueMP/servicos/sqlite.dart';
 
 class BotaoRetornar extends StatelessWidget {
   final VoidCallback onPressed;
   final List<Map<String, dynamic>> pecas;
+  final SQLite _dbHelper = SQLite();
 
   BotaoRetornar({required this.onPressed, required this.pecas});
+
+  Future<void> _salvarMovimentacao(BuildContext context) async {
+    final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
+
+    // Dados da movimentação
+    Map<String, dynamic> dadosMovimentacao = {
+      'data': DateTime.now().toIso8601String(),
+      'usuario': 'teste',
+      'origem': provOrigemDestino.origem,
+      'destino': provOrigemDestino.destino,
+      'total_pecas': pecas.length,
+      'status': 'Andamento',
+    };
+
+    // Inserir movimentação
+    await _dbHelper.inserirEstoqueMatMov(dadosMovimentacao);
+  }
 
   void _mostrarDialogoConfirmacao(BuildContext context) {
     final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
@@ -22,7 +41,7 @@ class BotaoRetornar extends StatelessWidget {
         builder: (BuildContext context) {
           return DialogoErro(
             titulo: 'Atenção!',
-            mensagem: 'Deseja abortar o processo de movimentação ou salvar?',
+            mensagem: 'Deseja abortar a movimentação ou salvar?',
             alturaMinimaTexto: 40,
             textoBotao1: 'Abortar',
             onBotao1Pressed: () {
@@ -32,8 +51,9 @@ class BotaoRetornar extends StatelessWidget {
               onPressed();
             },
             textoBotao2: 'Salvar',
-            onBotao2Pressed: () {
+            onBotao2Pressed: () async {
               print('Salvado');
+              await _salvarMovimentacao(context);
               provOrigemDestino.limpar();
               Navigator.of(context).pop();
               onPressed();
