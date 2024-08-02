@@ -19,12 +19,11 @@ class SQLite {
 
   Future<Database> _inicializarBanco() async {
     String caminhoDb = await getDatabasesPath();
-    String caminho = join(caminhoDb, 'com.estoque_mp.db'); // Nome do banco de dados ajustado
+    String caminho = join(caminhoDb, 'com.estoque_mp.db');
     return await openDatabase(
       caminho,
       version: 1,
       onCreate: (db, version) async {
-        // Criação da tabela USUARIO
         await db.execute(
             'CREATE TABLE USUARIO('
                 'id INTEGER PRIMARY KEY AUTOINCREMENT,'
@@ -34,20 +33,18 @@ class SQLite {
                 'refresh_token TEXT)'
         );
 
-        // Criação da tabela ESTOQUE_MAT_MOV
         await db.execute(
             'CREATE TABLE ESTOQUE_MAT_MOV('
-                'movimentacao CHAR(8) PRIMARY KEY NOT NULL,'
+                'movimentacao INTEGER PRIMARY KEY AUTOINCREMENT,'
                 'filial VARCHAR(25) NOT NULL,'
                 'data DATETIME(23) NOT NULL,'
                 'usuario VARCHAR(25) NOT NULL,'
                 'origem VARCHAR(8) NOT NULL,'
-                'destino VARCHAR(8) NOT NULL,'
+                'destino VARCHAR(8),'
                 'total_pecas INT,'
                 'status VARCHAR(25))'
         );
 
-        // Criação da tabela ESTOQUE_MAT_MOV_ITEM
         await db.execute(
             'CREATE TABLE ESTOQUE_MAT_MOV_ITEM('
                 'material VARCHAR(11) NOT NULL,'
@@ -57,7 +54,7 @@ class SQLite {
                 'filial VARCHAR(25) NOT NULL,'
                 'unidade VARCHAR(5) NOT NULL,'
                 'quantidade DECIMAL(10,3),'
-                'movimentacao CHAR(8) NOT NULL,'
+                'movimentacao INTEGER NOT NULL,'
                 'FOREIGN KEY (movimentacao) REFERENCES ESTOQUE_MAT_MOV(movimentacao))'
         );
       },
@@ -118,7 +115,7 @@ class SQLite {
     return await db.query('ESTOQUE_MAT_MOV');
   }
 
-  Future<void> atualizarEstoqueMatMov(String movimentacao, Map<String, dynamic> dados) async {
+  Future<void> atualizarEstoqueMatMov(int movimentacao, Map<String, dynamic> dados) async {
     final db = await bancoDados;
     await db.update(
       'ESTOQUE_MAT_MOV',
@@ -128,7 +125,7 @@ class SQLite {
     );
   }
 
-  Future<void> deletarEstoqueMatMov(String movimentacao) async {
+  Future<void> deletarEstoqueMatMov(int movimentacao) async {
     final db = await bancoDados;
     await db.delete(
       'ESTOQUE_MAT_MOV',

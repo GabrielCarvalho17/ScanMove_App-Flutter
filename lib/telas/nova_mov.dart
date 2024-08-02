@@ -3,12 +3,11 @@ import 'package:AppEstoqueMP/componentes/drawer.dart';
 import 'package:AppEstoqueMP/componentes/app_bar.dart';
 import 'package:AppEstoqueMP/componentes/origem_destino.dart';
 import 'package:AppEstoqueMP/componentes/bottom_app_bar.dart';
-import 'package:AppEstoqueMP/funcoes/finalizar.dart';
 import 'package:AppEstoqueMP/componentes/peca.dart';
 import 'package:AppEstoqueMP/componentes/botao_adicionar_peca.dart';
-import 'package:AppEstoqueMP/componentes/botao_voltar.dart';
-import 'package:AppEstoqueMP/componentes/botao_finalizar.dart';
-import 'package:AppEstoqueMP/componentes/dialogo.dart'; // Importação do diálogo reutilizável
+import 'package:AppEstoqueMP/componentes/botao_retornar.dart';
+import 'package:AppEstoqueMP/componentes/botao_encerrar.dart';
+import 'package:AppEstoqueMP/componentes/dialogo.dart';
 
 class NovaMov extends StatefulWidget {
   @override
@@ -82,14 +81,15 @@ class _NovaMovState extends State<NovaMov> {
         },
       ),
       bottomNavigationBar: CustomBottomAppBar(
-        botaoVoltar: BotaoVoltar(
+        botaoVoltar: BotaoRetornar(
+          pecas: pecas,  // Passa a lista de peças para o BotaoRetornar
           onPressed: () {
             Navigator.of(context).pushReplacementNamed('/hist_mov');
           },
         ),
-        botaoFinalizar: BotaoFinalizar(
+        botaoFinalizar: BotaoEncerrar(
           onPressed: () {
-            finalizar();
+            print('Encerrar!');
           },
         ),
         contadorPecas: pecas.length, // Passa o número de peças para o BottomAppBar

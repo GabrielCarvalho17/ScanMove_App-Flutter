@@ -1,4 +1,0 @@
-
-void finalizar() {
-  print('Finalizar!');
-}
