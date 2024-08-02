@@ -13,8 +13,7 @@ class BotaoRetornar extends StatelessWidget {
     final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
     if (provOrigemDestino.origem.isEmpty || pecas.isEmpty) {
       // Se a origem não foi informada ou não há peças, volta diretamente para a rota 'hist_mov'
-      provOrigemDestino.setOrigem('');
-      provOrigemDestino.setDestino('');
+      provOrigemDestino.limpar();
       Navigator.of(context).pushReplacementNamed('/hist_mov');
     } else {
       // Se a origem foi informada e há peças, mostra o diálogo de confirmação
@@ -23,21 +22,19 @@ class BotaoRetornar extends StatelessWidget {
         builder: (BuildContext context) {
           return DialogoErro(
             titulo: 'Atenção!',
-            mensagem: 'Deseja abortar a movimentação ou salvar?',
+            mensagem: 'Deseja abortar o processo de movimentação ou salvar?',
             alturaMinimaTexto: 40,
             textoBotao1: 'Abortar',
             onBotao1Pressed: () {
               print('Abortado');
-              provOrigemDestino.setOrigem('');
-              provOrigemDestino.setDestino('');
+              provOrigemDestino.limpar();
               Navigator.of(context).pop();
               onPressed();
             },
             textoBotao2: 'Salvar',
             onBotao2Pressed: () {
               print('Salvado');
-              provOrigemDestino.setOrigem('');
-              provOrigemDestino.setDestino('');
+              provOrigemDestino.limpar();
               Navigator.of(context).pop();
               onPressed();
             },

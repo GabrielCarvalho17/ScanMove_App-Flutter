@@ -63,9 +63,9 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
         print("Localização obtida: ${localizacao.localizacao}, Filial: ${localizacao.filial}");
 
         if (campo == 'Origem') {
-          context.read<ProvOrigemDestino>().setOrigem(rawContent);
+          context.read<ProvOrigemDestino>().setOrigem(rawContent, filial: localizacao.filial);
         } else {
-          context.read<ProvOrigemDestino>().setDestino(rawContent);
+          context.read<ProvOrigemDestino>().setDestino(rawContent, filial: localizacao.filial);
         }
 
         // A verificação de igualdade entre origem e destino deve ser feita após atualizar os valores
