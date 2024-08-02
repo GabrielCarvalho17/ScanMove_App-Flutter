@@ -1,0 +1,24 @@
+com.example.app_estoque_mp.app-transition-1.2.0-0 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\106878295df789ba04b3c00f775b58e3\transformed\transition-1.2.0\res
+com.example.app_estoque_mp.app-recyclerview-1.1.0-1 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\267cc24c3056797ed7cfe4d96fc5f1b3\transformed\recyclerview-1.1.0\res
+com.example.app_estoque_mp.app-core-1.6.0-2 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\284a410c767ad6c7a2b0ffc8d8d85981\transformed\core-1.6.0\res
+com.example.app_estoque_mp.app-jetified-window-java-1.0.0-beta04-3 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\2a215381204751055df81b6269e717b7\transformed\jetified-window-java-1.0.0-beta04\res
+com.example.app_estoque_mp.app-jetified-annotation-experimental-1.1.0-4 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\3d2f03fc996c2e0aa3dee5cfa3002cd1\transformed\jetified-annotation-experimental-1.1.0\res
+com.example.app_estoque_mp.app-cardview-1.0.0-5 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\57bdf9bdd5c070eb8ccb2e3da263c0c3\transformed\cardview-1.0.0\res
+com.example.app_estoque_mp.app-material-1.1.0-6 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\5db7e8c49601040031640eb3c5bb3d3b\transformed\material-1.1.0\res
+com.example.app_estoque_mp.app-jetified-viewpager2-1.0.0-7 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\62fae99f55940d2254926af7935b5c6b\transformed\jetified-viewpager2-1.0.0\res
+com.example.app_estoque_mp.app-media-1.0.0-8 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\6b0474d987953096ecc6b40e9d5a11d9\transformed\media-1.0.0\res
+com.example.app_estoque_mp.app-coordinatorlayout-1.1.0-9 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\ac09da274b5ba7259aadcdbf5b1df7e6\transformed\coordinatorlayout-1.1.0\res
+com.example.app_estoque_mp.app-jetified-appcompat-resources-1.1.0-10 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\b73b96f80906a602e08ab096381151ae\transformed\jetified-appcompat-resources-1.1.0\res
+com.example.app_estoque_mp.app-appcompat-1.1.0-11 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\e43f46c792e6fcd300d45b14ba4d19b0\transformed\appcompat-1.1.0\res
+com.example.app_estoque_mp.app-jetified-core-1.9.8-12 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\ec0086f9910f71383defe10d9bf0d40d\transformed\jetified-core-1.9.8\res
+com.example.app_estoque_mp.app-jetified-window-1.0.0-beta04-13 C:\Users\gabriel.carvalho\.gradle\caches\transforms-3\f302e75fb7efd781bcf1a29281c188da\transformed\jetified-window-1.0.0-beta04\res
+com.example.app_estoque_mp.app-packaged_res-14 C:\Users\gabriel.carvalho\AppData\Local\Pub\Cache\hosted\pub.dev\barcode_scan2-4.3.3\android\build\intermediates\packaged_res\debug
+com.example.app_estoque_mp.app-packaged_res-15 C:\Users\gabriel.carvalho\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.2.3\android\build\intermediates\packaged_res\debug
+com.example.app_estoque_mp.app-pngs-16 C:\Users\gabriel.carvalho\Documents\Nova pasta\app_estoque_mp\android\app\build\generated\res\pngs\debug
+com.example.app_estoque_mp.app-resValues-17 C:\Users\gabriel.carvalho\Documents\Nova pasta\app_estoque_mp\android\app\build\generated\res\resValues\debug
+com.example.app_estoque_mp.app-rs-18 C:\Users\gabriel.carvalho\Documents\Nova pasta\app_estoque_mp\android\app\build\generated\res\rs\debug
+com.example.app_estoque_mp.app-mergeDebugResources-19 C:\Users\gabriel.carvalho\Documents\Nova pasta\app_estoque_mp\android\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir
+com.example.app_estoque_mp.app-mergeDebugResources-20 C:\Users\gabriel.carvalho\Documents\Nova pasta\app_estoque_mp\android\app\build\intermediates\incremental\debug\mergeDebugResources\stripped.dir
+com.example.app_estoque_mp.app-merged_res-21 C:\Users\gabriel.carvalho\Documents\Nova pasta\app_estoque_mp\android\app\build\intermediates\merged_res\debug
+com.example.app_estoque_mp.app-debug-22 C:\Users\gabriel.carvalho\Documents\Nova pasta\app_estoque_mp\android\app\src\debug\res
+com.example.app_estoque_mp.app-main-23 C:\Users\gabriel.carvalho\Documents\Nova pasta\app_estoque_mp\android\app\src\main\res
