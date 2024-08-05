@@ -75,6 +75,7 @@ class _NovaMovState extends State<NovaMov> {
             descCor: peca['descCor'],
             unidade: peca['unidade'],
             qtde: peca['qtde'],
+            filial: peca['filial'],
             pecas: pecas,
             parentState: this,
           );

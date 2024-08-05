@@ -31,7 +31,7 @@ class BotaoAdicionarPeca extends StatelessWidget {
                     },
                   );
                 } else {
-                  Map<String, dynamic>? peca = await _adicionarPeca(context);
+                  Map<String, dynamic>? peca = await _adicionarPeca(context, provOrigemDestino.origem);
                   if (peca != null) {
                     onPecaAdicionada(peca);
                   }
@@ -47,7 +47,7 @@ class BotaoAdicionarPeca extends StatelessWidget {
     );
   }
 
-  Future<Map<String, dynamic>?> _adicionarPeca(BuildContext context) async {
+  Future<Map<String, dynamic>?> _adicionarPeca(BuildContext context, String origem) async {
     final servPeca = ServPeca();
 
     try {
@@ -66,6 +66,19 @@ class BotaoAdicionarPeca extends StatelessWidget {
 
       final pecaModel = await servPeca.fetchPeca(barcode);
 
+      if (pecaModel.localizacao != origem) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return DialogoErro(
+              titulo: 'Atenção',
+              mensagem: 'A localização da peça não corresponde à origem.',
+            );
+          },
+        );
+        return null;
+      }
+
       return {
         'peca': pecaModel.peca,
         'partida': pecaModel.partida,
@@ -73,6 +86,7 @@ class BotaoAdicionarPeca extends StatelessWidget {
         'descMaterial': pecaModel.descMaterial,
         'cor': pecaModel.cor,
         'descCor': pecaModel.descCor,
+        'filial': pecaModel.filial,
         'unidade': pecaModel.unidade,
         'qtde': pecaModel.qtde,
       };

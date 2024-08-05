@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/provedores/origem_destino.dart';
+import 'package:AppEstoqueMP/provedores/usuario.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
 
@@ -13,11 +14,12 @@ class BotaoRetornar extends StatelessWidget {
 
   Future<void> _salvarMovimentacao(BuildContext context) async {
     final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
+    final provUsuario = Provider.of<ProvUsuario>(context, listen: false);
 
     // Dados da movimentação
     Map<String, dynamic> dadosMovimentacao = {
       'data': DateTime.now().toIso8601String(),
-      'usuario': 'teste',
+      'usuario': provUsuario.username,
       'origem': provOrigemDestino.origem,
       'destino': provOrigemDestino.destino,
       'total_pecas': pecas.length,
@@ -25,7 +27,21 @@ class BotaoRetornar extends StatelessWidget {
     };
 
     // Inserir movimentação
-    await _dbHelper.inserirEstoqueMatMov(dadosMovimentacao);
+    int movimentacaoId = await _dbHelper.inserirEstoqueMatMov(dadosMovimentacao);
+
+    // Inserir peças na tabela ESTOQUE_MAT_MOV_ITEM
+    for (var peca in pecas) {
+      Map<String, dynamic> dadosPeca = {
+        'material': peca['material'],
+        'cor_material': peca['cor'],
+        'peca': peca['peca'],
+        'partida': peca['partida'],
+        'unidade': peca['unidade'],
+        'quantidade': peca['qtde'],
+        'movimentacao': movimentacaoId,
+      };
+      await _dbHelper.inserirEstoqueMatMovItem(dadosPeca);
+    }
   }
 
   void _mostrarDialogoConfirmacao(BuildContext context) {
@@ -41,11 +57,11 @@ class BotaoRetornar extends StatelessWidget {
         builder: (BuildContext context) {
           return DialogoErro(
             titulo: 'Atenção!',
-            mensagem: 'Deseja abortar a movimentação ou salvar?',
+            mensagem: 'Deseja cancelar a movimentação ou salvar?',
             alturaMinimaTexto: 40,
-            textoBotao1: 'Abortar',
+            textoBotao1: 'Cancelar',
             onBotao1Pressed: () {
-              print('Abortado');
+              print('Cancelar');
               provOrigemDestino.limpar();
               Navigator.of(context).pop();
               onPressed();

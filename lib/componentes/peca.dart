@@ -9,6 +9,7 @@ class Peca extends StatelessWidget {
   final String descCor;
   final String unidade;
   final double qtde;
+  final String filial;
   final List<Map<String, dynamic>> pecas;
   final State parentState;
 
@@ -22,6 +23,7 @@ class Peca extends StatelessWidget {
     required this.descCor,
     required this.unidade,
     required this.qtde,
+    required this.filial,
     required this.pecas,
     required this.parentState,
   }) : super(key: key);
