@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:AppEstoqueMP/componentes/drawer.dart';
 import 'package:AppEstoqueMP/componentes/app_bar.dart';
 import 'package:AppEstoqueMP/componentes/floatactionbutton.dart';
+import 'package:AppEstoqueMP/componentes/movimentacao.dart';
+import 'package:AppEstoqueMP/servicos/sqlite.dart';
 
 class HistMov extends StatefulWidget {
   @override
@@ -10,6 +12,21 @@ class HistMov extends StatefulWidget {
 
 class _HistMovState extends State<HistMov> {
   bool isFabVisible = true;
+  List<Map<String, dynamic>> movimentacoes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarMovimentacoes();
+  }
+
+  Future<void> _carregarMovimentacoes() async {
+    final SQLite dbHelper = SQLite();
+    final movs = await dbHelper.obterEstoqueMatMov();
+    setState(() {
+      movimentacoes = movs;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +47,23 @@ class _HistMovState extends State<HistMov> {
         },
       ),
       drawer: CustomDrawer(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(0),
-        // Adicione o conteúdo do corpo aqui
+      body: movimentacoes.isEmpty
+          ? Center(child: Text('Nenhuma movimentação encontrada'))
+          : ListView.builder(
+        padding: const EdgeInsets.only(top: 16.0, bottom: 30),
+        itemCount: movimentacoes.length,
+        itemBuilder: (context, index) {
+          final mov = movimentacoes[index];
+          return Movimentacao(
+            id: mov['id'],
+            data: DateTime.parse(mov['data']),
+            origem: mov['origem'],
+            destino: mov['destino'] ?? '',
+            totalPecas: mov['total_pecas'],
+            usuario: mov['usuario'],
+            status: mov['status'],
+          );
+        },
       ),
       floatingActionButton: Visibility(
         visible: isFabVisible,

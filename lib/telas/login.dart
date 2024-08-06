@@ -46,8 +46,7 @@ class LoginState extends State<Login> {
         final servAutenticacao = ServAutenticacao();
         final autenticacao = await servAutenticacao.login(usuario, senha);
 
-        Provider.of<ProvUsuario>(context, listen: false).setUsername(usuario);
-        Provider.of<ProvUsuario>(context, listen: false).saveUser(
+        await Provider.of<ProvUsuario>(context, listen: false).saveUser(
           usuario,
           autenticacao.accessToken,
           autenticacao.refreshToken,

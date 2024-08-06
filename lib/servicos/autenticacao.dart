@@ -25,20 +25,28 @@ class ServAutenticacao {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
 
-        // Armazenar os dados no SQLite
-        await _dbHelper.inserirUsuario({
-          'username': username,
-          'password': password,
-          'access_token': data['access'],
-          'refresh_token': data['refresh'],
-        });
+        final List<Map<String, dynamic>> users = await _dbHelper.obterUsuario();
+
+        if (users.isNotEmpty) {
+          await _dbHelper.atualizarUsuario(users.first['id'], {
+            'username': username,
+            'access_token': data['access'],
+            'refresh_token': data['refresh'],
+          });
+        } else {
+          await _dbHelper.inserirUsuario({
+            'username': username,
+            'access_token': data['access'],
+            'refresh_token': data['refresh'],
+          });
+        }
 
         return Autenticacao.fromJson(data);
       } else {
-        throw Exception('Falha ao fazer login');
+        throw Exception('Falha ao fazer login: ${response.body}');
       }
     } catch (e) {
-      throw Exception('Falha ao fazer login');
+      throw Exception('Falha ao fazer login: $e');
     }
   }
 
@@ -127,7 +135,10 @@ class ServAutenticacao {
   Future<void> logout() async {
     final List<Map<String, dynamic>> users = await _dbHelper.obterUsuario();
     if (users.isNotEmpty) {
-      await _dbHelper.deletarUsuario(users.first['id']);
+      await _dbHelper.atualizarUsuario(users.first['id'], {
+        'access_token': '',
+        'refresh_token': '',
+      });
     }
   }
 }

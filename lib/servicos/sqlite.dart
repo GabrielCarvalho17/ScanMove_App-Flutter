@@ -28,7 +28,6 @@ class SQLite {
             'CREATE TABLE USUARIO('
                 'id INTEGER PRIMARY KEY AUTOINCREMENT,'
                 'username VARCHAR(25) NOT NULL,'
-                'password VARCHAR(100) NOT NULL,'
                 'access_token TEXT,'
                 'refresh_token TEXT)'
         );
@@ -73,11 +72,6 @@ class SQLite {
   Future<List<Map<String, dynamic>>> obterUsuario() async {
     final db = await bancoDados;
     return await db.query('USUARIO');
-  }
-
-  Future<void> limparUsuarios() async {
-    final db = await bancoDados;
-    await db.delete('USUARIO');
   }
 
   Future<void> atualizarUsuario(int id, Map<String, dynamic> dados) async {

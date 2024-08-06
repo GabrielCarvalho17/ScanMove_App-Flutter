@@ -21,13 +21,24 @@ class ProvUsuario with ChangeNotifier {
 
   Future<void> saveUser(String username, String token, String refreshToken) async {
     print('Salvando usuário no SQLite');
-    await _dbHelper.limparUsuarios();
-    await _dbHelper.inserirUsuario({
-      'username': username,
-      'password': '', // Senha não está sendo usada aqui
-      'access_token': token,
-      'refresh_token': refreshToken,
-    });
+    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuario();
+
+    if (users.isNotEmpty) {
+      // Atualiza o usuário existente
+      await _dbHelper.atualizarUsuario(users.first['id'], {
+        'username': username,
+        'access_token': token,
+        'refresh_token': refreshToken,
+      });
+    } else {
+      // Insere um novo usuário
+      await _dbHelper.inserirUsuario({
+        'username': username,
+        'access_token': token,
+        'refresh_token': refreshToken,
+      });
+    }
+
     setUsername(username);
     setToken(token);
     print('Usuário salvo: $username, token: $token');
@@ -44,10 +55,16 @@ class ProvUsuario with ChangeNotifier {
   }
 
   Future<void> logout() async {
-    print('Limpando usuários do SQLite');
-    await _dbHelper.limparUsuarios(); // Limpa todos os usuários no logout
-    setUsername('');
-    setToken('');
+    print('Atualizando tokens para nulos no SQLite');
+    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuario();
+    if (users.isNotEmpty) {
+      await _dbHelper.atualizarUsuario(users.first['id'], {
+        'access_token': '',
+        'refresh_token': '',
+      });
+      setUsername('');
+      setToken('');
+    }
   }
 
   Future<void> loadUserOnInit() async {
