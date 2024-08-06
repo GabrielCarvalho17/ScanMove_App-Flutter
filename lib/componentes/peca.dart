@@ -10,8 +10,6 @@ class Peca extends StatelessWidget {
   final String unidade;
   final double qtde;
   final String filial;
-  final List<Map<String, dynamic>> pecas;
-  final State parentState;
 
   const Peca({
     Key? key,
@@ -24,8 +22,6 @@ class Peca extends StatelessWidget {
     required this.unidade,
     required this.qtde,
     required this.filial,
-    required this.pecas,
-    required this.parentState,
   }) : super(key: key);
 
   @override
@@ -43,27 +39,9 @@ class Peca extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '$peca - $partida',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  Transform.translate(
-                    offset: Offset(4, 0),
-                    child: GestureDetector(
-                      onTap: () {
-                        pecas.removeWhere((element) => element['peca'] == peca);
-                        parentState.setState(() {}); // Atualiza a tela
-                      },
-                      child: Container(
-                        color: Colors.transparent,
-                        child: Icon(Icons.delete, color: Theme.of(context).primaryColor),
-                      ),
-                    ),
-                  ),
-                ],
+              Text(
+                '$peca - $partida',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               SizedBox(height: 10),
               Text('$material - $descMaterial'),

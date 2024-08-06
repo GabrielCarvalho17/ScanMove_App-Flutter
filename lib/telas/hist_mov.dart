@@ -28,6 +28,13 @@ class _HistMovState extends State<HistMov> {
     });
   }
 
+  void _removerMovimentacao(int index) {
+    setState(() {
+      movimentacoes.removeAt(index);
+    });
+    // Você pode adicionar a lógica para remover a movimentação do banco de dados aqui
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,14 +61,34 @@ class _HistMovState extends State<HistMov> {
         itemCount: movimentacoes.length,
         itemBuilder: (context, index) {
           final mov = movimentacoes[index];
-          return Movimentacao(
-            id: mov['id'],
-            data: DateTime.parse(mov['data']),
-            origem: mov['origem'],
-            destino: mov['destino'] ?? '',
-            totalPecas: mov['total_pecas'],
-            usuario: mov['usuario'],
-            status: mov['status'],
+          return Dismissible(
+            key: Key(mov['id'].toString()),
+            direction: DismissDirection.endToStart,
+            onDismissed: (direction) {
+              _removerMovimentacao(index);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Movimentação removida')),
+              );
+            },
+            background: Container(
+              color: Theme.of(context).primaryColor,
+              alignment: Alignment.centerRight,
+              padding: EdgeInsets.symmetric(horizontal: 20.0),
+              child: Icon(
+                Icons.delete,
+                color: Colors.white,
+              ),
+            ),
+            child: Movimentacao(
+              id: mov['id'],
+              data: DateTime.parse(mov['data']),
+              origem: mov['origem'],
+              destino: mov['destino'] ?? '',
+              totalPecas: mov['total_pecas'],
+              usuario: mov['usuario'],
+              status: mov['status'],
+            ),
           );
         },
       ),

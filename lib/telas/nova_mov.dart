@@ -36,9 +36,9 @@ class _NovaMovState extends State<NovaMov> {
     }
   }
 
-  void removerPeca(String pecaCodigo) {
+  void removerPeca(int index) {
     setState(() {
-      pecas.removeWhere((peca) => peca['peca'] == pecaCodigo);
+      pecas.removeAt(index);
     });
   }
 
@@ -62,28 +62,42 @@ class _NovaMovState extends State<NovaMov> {
       ),
       drawer: CustomDrawer(),
       body: ListView.builder(
-        padding: const EdgeInsets.only(top: 16.0, bottom: 30), // Adiciona padding ao redor do ListView
+        padding: const EdgeInsets.only(top: 16.0, bottom: 30),
         itemCount: pecas.length,
         itemBuilder: (context, index) {
           final peca = pecas[index];
-          return Peca(
-            peca: peca['peca'],
-            partida: peca['partida'],
-            material: peca['material'],
-            descMaterial: peca['descMaterial'],
-            cor: peca['cor'],
-            descCor: peca['descCor'],
-            unidade: peca['unidade'],
-            qtde: peca['qtde'],
-            filial: peca['filial'],
-            pecas: pecas,
-            parentState: this,
+          return Dismissible(
+            key: Key(peca['peca']),
+            direction: DismissDirection.endToStart,
+            onDismissed: (direction) {
+              removerPeca(index);
+            },
+            background: Container(
+              color: Theme.of(context).primaryColor,
+              alignment: Alignment.centerRight,
+              padding: EdgeInsets.symmetric(horizontal: 20.0),
+              child: Icon(
+                Icons.delete,
+                color: Colors.white,
+              ),
+            ),
+            child: Peca(
+              peca: peca['peca'],
+              partida: peca['partida'],
+              material: peca['material'],
+              descMaterial: peca['descMaterial'],
+              cor: peca['cor'],
+              descCor: peca['descCor'],
+              unidade: peca['unidade'],
+              qtde: peca['qtde'],
+              filial: peca['filial'],
+            ),
           );
         },
       ),
       bottomNavigationBar: CustomBottomAppBar(
         botaoVoltar: BotaoRetornar(
-          pecas: pecas,  // Passa a lista de peças para o BotaoRetornar
+          pecas: pecas,
           onPressed: () {
             Navigator.of(context).pushReplacementNamed('/hist_mov');
           },
@@ -93,7 +107,7 @@ class _NovaMovState extends State<NovaMov> {
             print('Encerrar!');
           },
         ),
-        contadorPecas: pecas.length, // Passa o número de peças para o BottomAppBar
+        contadorPecas: pecas.length,
       ),
       floatingActionButton: Visibility(
         visible: isFabVisible,
