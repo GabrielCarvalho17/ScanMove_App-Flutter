@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/servicos/peca.dart';
 import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:AppEstoqueMP/provedores/origem_destino.dart';
+import 'package:AppEstoqueMP/provedores/peca.dart'; // Importar o novo provedor
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 
 class BotaoAdicionarPeca extends StatelessWidget {
@@ -14,7 +15,6 @@ class BotaoAdicionarPeca extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ProvOrigemDestino>(
       builder: (context, provOrigemDestino, child) {
-        print('Origem no botão: ${provOrigemDestino.origem}'); // Adicione este print
         return Container(
           width: 55.0,
           height: 55.0,
@@ -35,6 +35,7 @@ class BotaoAdicionarPeca extends StatelessWidget {
                   Map<String, dynamic>? peca = await _adicionarPeca(context, provOrigemDestino.origem);
                   if (peca != null) {
                     onPecaAdicionada(peca);
+                    Provider.of<ProvPeca>(context, listen: false).setUltimaPeca(peca['localizacao'], peca['filial']); // Atualizar o provedor de peça
                   }
                 }
               },
@@ -53,11 +54,11 @@ class BotaoAdicionarPeca extends StatelessWidget {
 
     try {
       final scanResult = await BarcodeScanner.scan();
-      print('Resultado do scan: ${scanResult.rawContent}'); // Adicione este print
+      print('Resultado do scan: ${scanResult.rawContent}');
 
       // Verifica se o resultado é vazio
       if (scanResult.rawContent.isEmpty) {
-        print('Código de barras vazio.'); // Adicione este print
+        print('Código de barras vazio.');
         return null;
       }
 
@@ -67,7 +68,7 @@ class BotaoAdicionarPeca extends StatelessWidget {
       }
 
       final pecaModel = await servPeca.fetchPeca(barcode);
-      print('Modelo de peça: ${pecaModel.toString()}'); // Adicione este print
+      print('Modelo de peça: ${pecaModel.toString()}');
 
       if (pecaModel.localizacao != origem) {
         showDialog(
@@ -89,12 +90,13 @@ class BotaoAdicionarPeca extends StatelessWidget {
         'descMaterial': pecaModel.descMaterial,
         'cor': pecaModel.cor,
         'descCor': pecaModel.descCor,
-        'filial': pecaModel.filial,
+        'localizacao': pecaModel.localizacao, // Adicionar localização
+        'filial': pecaModel.filial, // Adicionar filial
         'unidade': pecaModel.unidade,
         'qtde': pecaModel.qtde,
       };
     } on PecaNotFoundException catch (e) {
-      print('Peça não encontrada: ${e.message}'); // Adicione este print
+      print('Peça não encontrada: ${e.message}');
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -106,7 +108,7 @@ class BotaoAdicionarPeca extends StatelessWidget {
       );
       return null;
     } catch (e) {
-      print('Erro: $e'); // Adicione este print
+      print('Erro: $e');
       showDialog(
         context: context,
         builder: (BuildContext context) {

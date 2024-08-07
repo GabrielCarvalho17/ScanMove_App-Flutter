@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/provedores/usuario.dart';
 import 'package:AppEstoqueMP/provedores/origem_destino.dart';
+import 'package:AppEstoqueMP/provedores/peca.dart'; // Importar o novo provedor
 import 'rotas.dart';
 import 'tema.dart';
 
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: provUsuario),
         ChangeNotifierProvider(create: (_) => ProvOrigemDestino()),
+        ChangeNotifierProvider(create: (_) => ProvPeca()), // Adicionar o novo provedor
       ],
       child: MaterialApp(
         title: 'App Estudo',

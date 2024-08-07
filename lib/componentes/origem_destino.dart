@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 import 'package:AppEstoqueMP/servicos/localizacao.dart';
 import 'package:AppEstoqueMP/provedores/origem_destino.dart';
+import 'package:AppEstoqueMP/provedores/peca.dart'; // Importar o novo provedor
 
 class FormOrigemDestino extends StatefulWidget implements PreferredSizeWidget {
   final Map<String, String>? dados;
@@ -49,8 +50,23 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
     }
 
     origemController.addListener(() {
+      final provPeca = Provider.of<ProvPeca>(context, listen: false);
       if (provOrigemDestino.origem != origemController.text) {
-        provOrigemDestino.setOrigem(origemController.text);
+        // Verificação de localização
+        if (provPeca.ultimaLocalizacao.isNotEmpty && provPeca.ultimaLocalizacao != origemController.text) {
+          origemController.text = provOrigemDestino.origem; // Reset to previous value
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return DialogoErro(
+                titulo: 'Atenção',
+                mensagem: 'A nova origem não corresponde à localização das peças já adicionadas.',
+              );
+            },
+          );
+        } else {
+          provOrigemDestino.setOrigem(origemController.text);
+        }
       }
     });
 
