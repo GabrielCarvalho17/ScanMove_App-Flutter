@@ -9,7 +9,6 @@ class Peca extends StatelessWidget {
   final String descCor;
   final String unidade;
   final double qtde;
-  final String filial;
 
   const Peca({
     Key? key,
@@ -21,7 +20,6 @@ class Peca extends StatelessWidget {
     required this.descCor,
     required this.unidade,
     required this.qtde,
-    required this.filial,
   }) : super(key: key);
 
   @override

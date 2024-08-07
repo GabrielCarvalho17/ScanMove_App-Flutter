@@ -42,7 +42,7 @@ class SQLite {
               'destino VARCHAR(8),'
               'filial_origem VARCHAR(25) NOT NULL,'
               'filial_destino VARCHAR(25),'
-              'total_pecas INT NOT NULL,'
+              'total_pecas INTEGER NOT NULL,'
               'status VARCHAR(25) NOT NULL)',
         );
 
@@ -53,8 +53,12 @@ class SQLite {
               'cor_material VARCHAR(10) NOT NULL,'
               'partida VARCHAR(6) NOT NULL,'
               'unidade VARCHAR(5) NOT NULL,'
-              'quantidade DECIMAL(10,3),'
+              'quantidade REAL,'
               'movimentacao INTEGER,'
+              'desc_material TEXT,'
+              'desc_cor_material TEXT,'
+              'localizacao TEXT,'
+              'filial TEXT,'
               'FOREIGN KEY (movimentacao) REFERENCES ESTOQUE_MAT_MOV(id))',
         );
       },
@@ -179,6 +183,15 @@ class SQLite {
       'ESTOQUE_MAT_MOV_ITEM',
       where: 'peca = ?',
       whereArgs: [peca],
+    );
+  }
+
+  Future<void> deletarEstoqueMatMovItensPorMovimentacao(int movimentacao) async {
+    final db = await bancoDados;
+    await db.delete(
+      'ESTOQUE_MAT_MOV_ITEM',
+      where: 'movimentacao = ?',
+      whereArgs: [movimentacao],
     );
   }
 }

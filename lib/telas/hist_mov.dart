@@ -30,7 +30,13 @@ class _HistMovState extends State<HistMov> {
 
   Future<void> _removerMovimentacao(int index) async {
     final SQLite dbHelper = SQLite();
-    await dbHelper.deletarEstoqueMatMov(movimentacoes[index]['id']);
+    int movimentacaoId = movimentacoes[index]['id'];
+
+    // Exclua os itens associados à movimentação
+    await dbHelper.deletarEstoqueMatMovItensPorMovimentacao(movimentacaoId);
+
+    // Exclua a movimentação
+    await dbHelper.deletarEstoqueMatMov(movimentacaoId);
 
     setState(() {
       movimentacoes.removeAt(index);

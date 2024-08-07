@@ -34,13 +34,17 @@ class BotaoRetornar extends StatelessWidget {
     // Inserir peças na tabela ESTOQUE_MAT_MOV_ITEM
     for (var peca in pecas) {
       Map<String, dynamic> dadosPeca = {
+        'peca': peca['peca'],
         'material': peca['material'],
         'cor_material': peca['cor'],
-        'peca': peca['peca'],
         'partida': peca['partida'],
         'unidade': peca['unidade'],
         'quantidade': peca['qtde'],
         'movimentacao': movimentacaoId,
+        'desc_material': peca['descMaterial'],
+        'desc_cor_material': peca['descCor'],
+        'localizacao': peca['localizacao'],
+        'filial': peca['filial'],
       };
       await _dbHelper.inserirEstoqueMatMovItem(dadosPeca);
     }

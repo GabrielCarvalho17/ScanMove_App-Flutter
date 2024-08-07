@@ -37,30 +37,33 @@ class _NovaMovState extends State<NovaMov> {
 
   Future<void> _carregarMovimentacao(int id) async {
     final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
-
-    // Consultar a movimentação e as peças do banco de dados
-    Map<String, dynamic> movimentacao = await _dbHelper.obterEstoqueMatMovPorId(id);
-    List<Map<String, dynamic>> itens = await _dbHelper.obterEstoqueMatMovItensPorMovimentacao(id);
+    final movimentacao = await _dbHelper.obterEstoqueMatMovPorId(id);
+    final itens = await _dbHelper.obterEstoqueMatMovItensPorMovimentacao(id);
 
     if (movimentacao.isNotEmpty) {
-      String origem = movimentacao['origem']!;
-      String filialOrigem = movimentacao['filial_origem']!;
-      String destino = movimentacao['destino'] ?? '';
-      String filialDestino = movimentacao['filial_destino'] ?? '';
-
       dadosMovimentacao = {
-        'origem': origem,
-        'filial_origem': filialOrigem,
-        'destino': destino,
-        'filial_destino': filialDestino,
+        'origem': movimentacao['origem'],
+        'filial_origem': movimentacao['filial_origem'],
+        'destino': movimentacao['destino'] ?? '',
+        'filial_destino': movimentacao['filial_destino'] ?? '',
       };
 
-      provOrigemDestino.setOrigem(origem, filial: filialOrigem);
-      provOrigemDestino.setDestino(destino, filial: filialDestino);
+      provOrigemDestino.setOrigem(movimentacao['origem'], filial: movimentacao['filial_origem']);
+      provOrigemDestino.setDestino(movimentacao['destino'], filial: movimentacao['filial_destino']);
     }
 
     setState(() {
-      pecas = List.from(itens);  // Cria uma nova lista para garantir que é mutável
+      pecas = itens.map((item) => {
+        'peca': item['peca'],
+        'partida': item['partida'],
+        'material': item['material'],
+        'descMaterial': item['desc_material'],
+        'cor': item['cor_material'],
+        'descCor': item['desc_cor_material'],
+        'unidade': item['unidade'],
+        'qtde': (item['quantidade'] is int) ? item['quantidade'].toDouble() : item['quantidade'],
+        'filial': item['filial'],
+      }).toList();
     });
   }
 
@@ -68,47 +71,33 @@ class _NovaMovState extends State<NovaMov> {
     if (pecas.any((element) => element['peca'] == peca['peca'])) {
       showDialog(
         context: context,
-        builder: (BuildContext context) {
-          return DialogoErro(
-            titulo: 'Atenção',
-            mensagem: 'Já existe uma peça com este código.',
-          );
-        },
+        builder: (context) => DialogoErro(
+          titulo: 'Atenção',
+          mensagem: 'Já existe uma peça com este código.',
+        ),
       );
     } else {
       setState(() {
-        pecas = List.from(pecas)..add(peca);  // Cria uma nova lista para adicionar o item
+        pecas.add(peca);
       });
     }
   }
 
   void removerPeca(int index) {
     setState(() {
-      pecas = List.from(pecas)..removeAt(index);  // Cria uma nova lista para remover o item
+      pecas.removeAt(index);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
-
     return Scaffold(
       backgroundColor: Color(0xFFf3f3f3),
       appBar: CustomAppBar(
         titleText: 'Movimentar',
-        bottom: FormOrigemDestino(
-          dados: dadosMovimentacao,
-        ),
-        onSearchOpen: () {
-          setState(() {
-            isFabVisible = false;
-          });
-        },
-        onSearchClose: () {
-          setState(() {
-            isFabVisible = true;
-          });
-        },
+        bottom: FormOrigemDestino(dados: dadosMovimentacao),
+        onSearchOpen: () => setState(() => isFabVisible = false),
+        onSearchClose: () => setState(() => isFabVisible = true),
       ),
       drawer: CustomDrawer(),
       body: ListView.builder(
@@ -119,17 +108,12 @@ class _NovaMovState extends State<NovaMov> {
           return Dismissible(
             key: Key(peca['peca']),
             direction: DismissDirection.endToStart,
-            onDismissed: (direction) {
-              removerPeca(index);
-            },
+            onDismissed: (direction) => removerPeca(index),
             background: Container(
               color: Theme.of(context).primaryColor,
               alignment: Alignment.centerRight,
               padding: EdgeInsets.symmetric(horizontal: 20.0),
-              child: Icon(
-                Icons.delete,
-                color: Colors.white,
-              ),
+              child: Icon(Icons.delete, color: Colors.white),
             ),
             child: Peca(
               peca: peca['peca'],
@@ -140,7 +124,6 @@ class _NovaMovState extends State<NovaMov> {
               descCor: peca['descCor'] ?? '',
               unidade: peca['unidade'] ?? '',
               qtde: peca['qtde'] ?? 0.0,
-              filial: peca['filial'] ?? '',
             ),
           );
         },
@@ -148,23 +131,17 @@ class _NovaMovState extends State<NovaMov> {
       bottomNavigationBar: CustomBottomAppBar(
         botaoVoltar: BotaoRetornar(
           pecas: pecas,
-          onPressed: () {
-            Navigator.of(context).pushReplacementNamed('/hist_mov');
-          },
+          onPressed: () => Navigator.of(context).pushReplacementNamed('/hist_mov'),
         ),
         botaoFinalizar: BotaoEncerrar(
-          onPressed: () {
-            print('Encerrar!');
-          },
+          onPressed: () => print('Encerrar!'),
         ),
         contadorPecas: pecas.length,
       ),
       floatingActionButton: Visibility(
         visible: isFabVisible,
         child: BotaoAdicionarPeca(
-          onPecaAdicionada: (peca) {
-            adicionarPeca(peca);
-          },
+          onPecaAdicionada: adicionarPeca,
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
