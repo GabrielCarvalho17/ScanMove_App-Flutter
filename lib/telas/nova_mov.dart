@@ -38,7 +38,7 @@ class _NovaMovState extends State<NovaMov> {
   Future<void> _carregarMovimentacao(int id) async {
     final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
     final movimentacao = await _dbHelper.obterEstoqueMatMovPorId(id);
-    final itens = await _dbHelper.obterEstoqueMatMovItensPorMovimentacao(id);
+    final itens = await _dbHelper.obterEstoqueMatMovItensPorMovimentacao(id, movimentacao['mov_servidor']);
 
     if (movimentacao.isNotEmpty) {
       dadosMovimentacao = {

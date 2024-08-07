@@ -30,21 +30,43 @@ class _HistMovState extends State<HistMov> {
 
   Future<void> _removerMovimentacao(int index) async {
     final SQLite dbHelper = SQLite();
-    int movimentacaoId = movimentacoes[index]['id'];
-
-    // Exclua os itens associados à movimentação
-    await dbHelper.deletarEstoqueMatMovItensPorMovimentacao(movimentacaoId);
-
-    // Exclua a movimentação
-    await dbHelper.deletarEstoqueMatMov(movimentacaoId);
+    int movimentacaoId = movimentacoes[index]['mov_sqlite'];
+    int? movServidor = movimentacoes[index]['mov_servidor'];
 
     setState(() {
       movimentacoes.removeAt(index);
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Movimentação removida')),
-    );
+    try {
+      // Exclua os itens associados à movimentação
+      await dbHelper.deletarEstoqueMatMovItensPorMovimentacao(movimentacaoId, movServidor);
+
+      // Exclua a movimentação
+      await dbHelper.deletarEstoqueMatMov(movimentacaoId);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Movimentação removida')),
+      );
+    } catch (e) {
+      // Adiciona a movimentação de volta em caso de erro
+      setState(() {
+        movimentacoes.insert(index, {
+          'mov_sqlite': movimentacaoId,
+          'mov_servidor': movServidor,
+          'data': movimentacoes[index]['data'],
+          'usuario': movimentacoes[index]['usuario'],
+          'origem': movimentacoes[index]['origem'],
+          'destino': movimentacoes[index]['destino'],
+          'filial_origem': movimentacoes[index]['filial_origem'],
+          'filial_destino': movimentacoes[index]['filial_destino'],
+          'total_pecas': movimentacoes[index]['total_pecas'],
+          'status': movimentacoes[index]['status'],
+        });
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao remover movimentação')),
+      );
+    }
   }
 
   @override
@@ -74,7 +96,7 @@ class _HistMovState extends State<HistMov> {
         itemBuilder: (context, index) {
           final mov = movimentacoes[index];
           return Dismissible(
-            key: Key(mov['id'].toString()),
+            key: Key(mov['mov_sqlite'].toString()),
             direction: DismissDirection.endToStart,
             onDismissed: (direction) {
               _removerMovimentacao(index);
@@ -93,11 +115,11 @@ class _HistMovState extends State<HistMov> {
                 Navigator.pushNamed(
                   context,
                   '/nova_mov',
-                  arguments: mov['id'],
+                  arguments: mov['mov_sqlite'],
                 );
               },
               child: Movimentacao(
-                id: mov['id'],
+                id: mov['mov_sqlite'],
                 data: DateTime.parse(mov['data']),
                 origem: mov['origem'],
                 destino: mov['destino'],

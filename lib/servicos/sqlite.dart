@@ -34,8 +34,8 @@ class SQLite {
 
         await db.execute(
           'CREATE TABLE ESTOQUE_MAT_MOV('
-              'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-              'movimentacao INTEGER,'
+              'mov_sqlite INTEGER PRIMARY KEY AUTOINCREMENT,'
+              'mov_servidor INTEGER,'
               'data DATETIME NOT NULL,'
               'usuario VARCHAR(25) NOT NULL,'
               'origem VARCHAR(8) NOT NULL,'
@@ -54,12 +54,14 @@ class SQLite {
               'partida VARCHAR(6) NOT NULL,'
               'unidade VARCHAR(5) NOT NULL,'
               'quantidade REAL,'
-              'movimentacao INTEGER,'
+              'mov_sqlite INTEGER NOT NULL,'  // Ajuste para NOT NULL
+              'mov_servidor INTEGER,'
               'desc_material TEXT,'
               'desc_cor_material TEXT,'
               'localizacao TEXT,'
               'filial TEXT,'
-              'FOREIGN KEY (movimentacao) REFERENCES ESTOQUE_MAT_MOV(id))',
+              'FOREIGN KEY (mov_sqlite) REFERENCES ESTOQUE_MAT_MOV(mov_sqlite),'
+              'FOREIGN KEY (mov_servidor) REFERENCES ESTOQUE_MAT_MOV(mov_servidor))',
         );
       },
     );
@@ -114,32 +116,32 @@ class SQLite {
     return await db.query('ESTOQUE_MAT_MOV');
   }
 
-  Future<Map<String, dynamic>> obterEstoqueMatMovPorId(int id) async {
+  Future<Map<String, dynamic>> obterEstoqueMatMovPorId(int movSqlite) async {
     final db = await bancoDados;
     final result = await db.query(
       'ESTOQUE_MAT_MOV',
-      where: 'id = ?',
-      whereArgs: [id],
+      where: 'mov_sqlite = ?',
+      whereArgs: [movSqlite],
     );
     return result.isNotEmpty ? result.first : {};
   }
 
-  Future<void> atualizarEstoqueMatMov(int id, Map<String, dynamic> dados) async {
+  Future<void> atualizarEstoqueMatMov(int movSqlite, Map<String, dynamic> dados) async {
     final db = await bancoDados;
     await db.update(
       'ESTOQUE_MAT_MOV',
       dados,
-      where: 'id = ?',
-      whereArgs: [id],
+      where: 'mov_sqlite = ?',
+      whereArgs: [movSqlite],
     );
   }
 
-  Future<void> deletarEstoqueMatMov(int id) async {
+  Future<void> deletarEstoqueMatMov(int movSqlite) async {
     final db = await bancoDados;
     await db.delete(
       'ESTOQUE_MAT_MOV',
-      where: 'id = ?',
-      whereArgs: [id],
+      where: 'mov_sqlite = ?',
+      whereArgs: [movSqlite],
     );
   }
 
@@ -158,12 +160,20 @@ class SQLite {
     return await db.query('ESTOQUE_MAT_MOV_ITEM');
   }
 
-  Future<List<Map<String, dynamic>>> obterEstoqueMatMovItensPorMovimentacao(int movimentacao) async {
+  Future<List<Map<String, dynamic>>> obterEstoqueMatMovItensPorMovimentacao(int movSqlite, int? movServidor) async {
     final db = await bancoDados;
+    String whereClause = 'mov_sqlite = ?';
+    List<dynamic> whereArgs = [movSqlite];
+
+    if (movServidor != null) {
+      whereClause = 'mov_servidor = ?';
+      whereArgs = [movServidor];
+    }
+
     return await db.query(
       'ESTOQUE_MAT_MOV_ITEM',
-      where: 'movimentacao = ?',
-      whereArgs: [movimentacao],
+      where: whereClause,
+      whereArgs: whereArgs,
     );
   }
 
@@ -186,12 +196,20 @@ class SQLite {
     );
   }
 
-  Future<void> deletarEstoqueMatMovItensPorMovimentacao(int movimentacao) async {
+  Future<void> deletarEstoqueMatMovItensPorMovimentacao(int movSqlite, int? movServidor) async {
     final db = await bancoDados;
+    String whereClause = 'mov_sqlite = ?';
+    List<dynamic> whereArgs = [movSqlite];
+
+    if (movServidor != null) {
+      whereClause = 'mov_servidor = ?';
+      whereArgs = [movServidor];
+    }
+
     await db.delete(
       'ESTOQUE_MAT_MOV_ITEM',
-      where: 'movimentacao = ?',
-      whereArgs: [movimentacao],
+      where: whereClause,
+      whereArgs: whereArgs,
     );
   }
 }

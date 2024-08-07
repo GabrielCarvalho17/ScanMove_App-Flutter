@@ -40,11 +40,11 @@ class BotaoRetornar extends StatelessWidget {
         'partida': peca['partida'],
         'unidade': peca['unidade'],
         'quantidade': peca['qtde'],
-        'movimentacao': movimentacaoId,
+        'mov_sqlite': movimentacaoId,
         'desc_material': peca['descMaterial'],
         'desc_cor_material': peca['descCor'],
-        'localizacao': peca['localizacao'],
-        'filial': peca['filial'],
+        'localizacao': provOrigemDestino.origem, // Usando a origem como localizacao
+        'filial': provOrigemDestino.filialOrigem, // Usando a filial de origem
       };
       await _dbHelper.inserirEstoqueMatMovItem(dadosPeca);
     }
