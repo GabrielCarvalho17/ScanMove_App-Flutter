@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/componentes/drawer.dart';
 import 'package:AppEstoqueMP/componentes/app_bar.dart';
 import 'package:AppEstoqueMP/componentes/origem_destino.dart';
@@ -7,9 +8,15 @@ import 'package:AppEstoqueMP/componentes/peca.dart';
 import 'package:AppEstoqueMP/componentes/botao_adicionar_peca.dart';
 import 'package:AppEstoqueMP/componentes/botao_retornar.dart';
 import 'package:AppEstoqueMP/componentes/botao_encerrar.dart';
+import 'package:AppEstoqueMP/provedores/origem_destino.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
+import 'package:AppEstoqueMP/servicos/sqlite.dart';
 
 class NovaMov extends StatefulWidget {
+  final int? id;
+
+  NovaMov({this.id});
+
   @override
   _NovaMovState createState() => _NovaMovState();
 }
@@ -17,6 +24,45 @@ class NovaMov extends StatefulWidget {
 class _NovaMovState extends State<NovaMov> {
   List<Map<String, dynamic>> pecas = [];
   bool isFabVisible = true;
+  final SQLite _dbHelper = SQLite();
+  Map<String, String>? dadosMovimentacao;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.id != null) {
+      _carregarMovimentacao(widget.id!);
+    }
+  }
+
+  Future<void> _carregarMovimentacao(int id) async {
+    final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
+
+    // Consultar a movimentação e as peças do banco de dados
+    Map<String, dynamic> movimentacao = await _dbHelper.obterEstoqueMatMovPorId(id);
+    List<Map<String, dynamic>> itens = await _dbHelper.obterEstoqueMatMovItensPorMovimentacao(id);
+
+    if (movimentacao.isNotEmpty) {
+      String origem = movimentacao['origem']!;
+      String filialOrigem = movimentacao['filial_origem']!;
+      String destino = movimentacao['destino'] ?? '';
+      String filialDestino = movimentacao['filial_destino'] ?? '';
+
+      dadosMovimentacao = {
+        'origem': origem,
+        'filial_origem': filialOrigem,
+        'destino': destino,
+        'filial_destino': filialDestino,
+      };
+
+      provOrigemDestino.setOrigem(origem, filial: filialOrigem);
+      provOrigemDestino.setDestino(destino, filial: filialDestino);
+    }
+
+    setState(() {
+      pecas = List.from(itens);  // Cria uma nova lista para garantir que é mutável
+    });
+  }
 
   void adicionarPeca(Map<String, dynamic> peca) {
     if (pecas.any((element) => element['peca'] == peca['peca'])) {
@@ -31,24 +77,28 @@ class _NovaMovState extends State<NovaMov> {
       );
     } else {
       setState(() {
-        pecas.add(peca);
+        pecas = List.from(pecas)..add(peca);  // Cria uma nova lista para adicionar o item
       });
     }
   }
 
   void removerPeca(int index) {
     setState(() {
-      pecas.removeAt(index);
+      pecas = List.from(pecas)..removeAt(index);  // Cria uma nova lista para remover o item
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
+
     return Scaffold(
       backgroundColor: Color(0xFFf3f3f3),
       appBar: CustomAppBar(
         titleText: 'Movimentar',
-        bottom: FormOrigemDestino(),
+        bottom: FormOrigemDestino(
+          dados: dadosMovimentacao,
+        ),
         onSearchOpen: () {
           setState(() {
             isFabVisible = false;
@@ -85,12 +135,12 @@ class _NovaMovState extends State<NovaMov> {
               peca: peca['peca'],
               partida: peca['partida'],
               material: peca['material'],
-              descMaterial: peca['descMaterial'],
-              cor: peca['cor'],
-              descCor: peca['descCor'],
-              unidade: peca['unidade'],
-              qtde: peca['qtde'],
-              filial: peca['filial'],
+              descMaterial: peca['descMaterial'] ?? '',
+              cor: peca['cor'] ?? '',
+              descCor: peca['descCor'] ?? '',
+              unidade: peca['unidade'] ?? '',
+              qtde: peca['qtde'] ?? 0.0,
+              filial: peca['filial'] ?? '',
             ),
           );
         },

@@ -6,7 +6,9 @@ import 'package:AppEstoqueMP/servicos/localizacao.dart';
 import 'package:AppEstoqueMP/provedores/origem_destino.dart';
 
 class FormOrigemDestino extends StatefulWidget implements PreferredSizeWidget {
-  const FormOrigemDestino({Key? key}) : super(key: key);
+  final Map<String, String>? dados;
+
+  const FormOrigemDestino({Key? key, this.dados}) : super(key: key);
 
   @override
   _FormOrigemDestinoState createState() => _FormOrigemDestinoState();
@@ -23,9 +25,28 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
   @override
   void initState() {
     super.initState();
+    origemController = TextEditingController();
+    destinoController = TextEditingController();
+
+    // Inicializar os controladores com os dados recebidos
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _atualizarControladoresEProvedor();
+    });
+  }
+
+  void _atualizarControladoresEProvedor() {
     final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
-    origemController = TextEditingController(text: provOrigemDestino.origem);
-    destinoController = TextEditingController(text: provOrigemDestino.destino);
+
+    if (widget.dados != null) {
+      origemController.text = widget.dados!['origem']!;
+      destinoController.text = widget.dados!['destino'] ?? '';
+
+      provOrigemDestino.setOrigem(widget.dados!['origem']!, filial: widget.dados!['filial_origem']!);
+      provOrigemDestino.setDestino(widget.dados!['destino'] ?? '', filial: widget.dados!['filial_destino'] ?? '');
+    } else {
+      origemController.text = provOrigemDestino.origem;
+      destinoController.text = provOrigemDestino.destino;
+    }
 
     origemController.addListener(() {
       if (provOrigemDestino.origem != origemController.text) {
@@ -41,6 +62,16 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
   }
 
   @override
+  void didUpdateWidget(covariant FormOrigemDestino oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.dados != widget.dados) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _atualizarControladoresEProvedor();
+      });
+    }
+  }
+
+  @override
   void dispose() {
     origemController.dispose();
     destinoController.dispose();
@@ -53,7 +84,6 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
     if (result.type == ResultType.Barcode) {
       String rawContent = result.rawContent;
 
-      // Define o texto do campo
       setState(() {
         controller.text = rawContent;
       });
@@ -68,7 +98,6 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
           context.read<ProvOrigemDestino>().setDestino(rawContent, filial: localizacao.filial);
         }
 
-        // A verificação de igualdade entre origem e destino deve ser feita após atualizar os valores
         WidgetsBinding.instance.addPostFrameCallback((_) {
           verificarOrigemDestino(campo);
         });
@@ -150,7 +179,7 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
                         decoration: InputDecoration(
                           labelText: 'Origem',
                           hintText: 'Insira a origem',
-                          labelStyle: TextStyle(color: Colors.white, fontSize: 18.0), // Aumente o tamanho da fonte aqui
+                          labelStyle: TextStyle(color: Colors.white, fontSize: 18.0),
                           hintStyle: TextStyle(color: Colors.white70),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10.0),
@@ -178,7 +207,7 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
                         decoration: InputDecoration(
                           labelText: 'Destino',
                           hintText: 'Insira o destino',
-                          labelStyle: TextStyle(color: Colors.white, fontSize: 18.0), // Aumente o tamanho da fonte aqui
+                          labelStyle: TextStyle(color: Colors.white, fontSize: 18.0),
                           hintStyle: TextStyle(color: Colors.white70),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10.0),

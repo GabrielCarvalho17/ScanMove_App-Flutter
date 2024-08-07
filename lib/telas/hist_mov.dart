@@ -28,11 +28,17 @@ class _HistMovState extends State<HistMov> {
     });
   }
 
-  void _removerMovimentacao(int index) {
+  Future<void> _removerMovimentacao(int index) async {
+    final SQLite dbHelper = SQLite();
+    await dbHelper.deletarEstoqueMatMov(movimentacoes[index]['id']);
+
     setState(() {
       movimentacoes.removeAt(index);
     });
-    // Você pode adicionar a lógica para remover a movimentação do banco de dados aqui
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Movimentação removida')),
+    );
   }
 
   @override
@@ -66,10 +72,6 @@ class _HistMovState extends State<HistMov> {
             direction: DismissDirection.endToStart,
             onDismissed: (direction) {
               _removerMovimentacao(index);
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Movimentação removida')),
-              );
             },
             background: Container(
               color: Theme.of(context).primaryColor,
@@ -80,14 +82,23 @@ class _HistMovState extends State<HistMov> {
                 color: Colors.white,
               ),
             ),
-            child: Movimentacao(
-              id: mov['id'],
-              data: DateTime.parse(mov['data']),
-              origem: mov['origem'],
-              destino: mov['destino'] ?? '',
-              totalPecas: mov['total_pecas'],
-              usuario: mov['usuario'],
-              status: mov['status'],
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  '/nova_mov',
+                  arguments: mov['id'],
+                );
+              },
+              child: Movimentacao(
+                id: mov['id'],
+                data: DateTime.parse(mov['data']),
+                origem: mov['origem'],
+                destino: mov['destino'],
+                totalPecas: mov['total_pecas'],
+                usuario: mov['usuario'],
+                status: mov['status'],
+              ),
             ),
           );
         },

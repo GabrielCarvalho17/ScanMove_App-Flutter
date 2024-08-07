@@ -25,35 +25,37 @@ class SQLite {
       version: 1,
       onCreate: (db, version) async {
         await db.execute(
-            'CREATE TABLE USUARIO('
-                'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-                'username VARCHAR(25) NOT NULL,'
-                'access_token TEXT,'
-                'refresh_token TEXT)'
+          'CREATE TABLE USUARIO('
+              'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+              'username VARCHAR(25) NOT NULL,'
+              'access_token TEXT,'
+              'refresh_token TEXT)',
         );
 
         await db.execute(
-            'CREATE TABLE ESTOQUE_MAT_MOV('
-                'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-                'movimentacao INTEGER,'
-                'data DATETIME NOT NULL,'
-                'usuario VARCHAR(25) NOT NULL,'
-                'origem VARCHAR(8) NOT NULL,'
-                'destino VARCHAR(8),'
-                'total_pecas INT NOT NULL,'
-                'status VARCHAR(25) NOT NULL)'
+          'CREATE TABLE ESTOQUE_MAT_MOV('
+              'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+              'movimentacao INTEGER,'
+              'data DATETIME NOT NULL,'
+              'usuario VARCHAR(25) NOT NULL,'
+              'origem VARCHAR(8) NOT NULL,'
+              'destino VARCHAR(8),'
+              'filial_origem VARCHAR(25) NOT NULL,'
+              'filial_destino VARCHAR(25),'
+              'total_pecas INT NOT NULL,'
+              'status VARCHAR(25) NOT NULL)',
         );
 
         await db.execute(
-            'CREATE TABLE ESTOQUE_MAT_MOV_ITEM('
-                'peca VARCHAR(6) PRIMARY KEY NOT NULL,'
-                'material VARCHAR(11) NOT NULL,'
-                'cor_material VARCHAR(10) NOT NULL,'
-                'partida VARCHAR(6) NOT NULL,'
-                'unidade VARCHAR(5) NOT NULL,'
-                'quantidade DECIMAL(10,3),'
-                'movimentacao INTEGER,'
-                'FOREIGN KEY (movimentacao) REFERENCES ESTOQUE_MAT_MOV(id))'
+          'CREATE TABLE ESTOQUE_MAT_MOV_ITEM('
+              'peca VARCHAR(6) PRIMARY KEY NOT NULL,'
+              'material VARCHAR(11) NOT NULL,'
+              'cor_material VARCHAR(10) NOT NULL,'
+              'partida VARCHAR(6) NOT NULL,'
+              'unidade VARCHAR(5) NOT NULL,'
+              'quantidade DECIMAL(10,3),'
+              'movimentacao INTEGER,'
+              'FOREIGN KEY (movimentacao) REFERENCES ESTOQUE_MAT_MOV(id))',
         );
       },
     );
@@ -108,6 +110,16 @@ class SQLite {
     return await db.query('ESTOQUE_MAT_MOV');
   }
 
+  Future<Map<String, dynamic>> obterEstoqueMatMovPorId(int id) async {
+    final db = await bancoDados;
+    final result = await db.query(
+      'ESTOQUE_MAT_MOV',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    return result.isNotEmpty ? result.first : {};
+  }
+
   Future<void> atualizarEstoqueMatMov(int id, Map<String, dynamic> dados) async {
     final db = await bancoDados;
     await db.update(
@@ -140,6 +152,15 @@ class SQLite {
   Future<List<Map<String, dynamic>>> obterEstoqueMatMovItem() async {
     final db = await bancoDados;
     return await db.query('ESTOQUE_MAT_MOV_ITEM');
+  }
+
+  Future<List<Map<String, dynamic>>> obterEstoqueMatMovItensPorMovimentacao(int movimentacao) async {
+    final db = await bancoDados;
+    return await db.query(
+      'ESTOQUE_MAT_MOV_ITEM',
+      where: 'movimentacao = ?',
+      whereArgs: [movimentacao],
+    );
   }
 
   Future<void> atualizarEstoqueMatMovItem(String peca, Map<String, dynamic> dados) async {

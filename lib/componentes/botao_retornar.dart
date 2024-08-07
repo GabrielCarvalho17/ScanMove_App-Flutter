@@ -22,6 +22,8 @@ class BotaoRetornar extends StatelessWidget {
       'usuario': provUsuario.username,
       'origem': provOrigemDestino.origem,
       'destino': provOrigemDestino.destino,
+      'filial_origem': provOrigemDestino.filialOrigem,
+      'filial_destino': provOrigemDestino.filialDestino,
       'total_pecas': pecas.length,
       'status': 'Andamento',
     };
@@ -62,17 +64,17 @@ class BotaoRetornar extends StatelessWidget {
             textoBotao1: 'Cancelar',
             onBotao1Pressed: () {
               print('Cancelar');
-              provOrigemDestino.limpar();
+              provOrigemDestino.limpar(); // Limpar os dados ao cancelar
               Navigator.of(context).pop();
-              onPressed();
+              Navigator.of(context).pushReplacementNamed('/hist_mov');
             },
             textoBotao2: 'Salvar',
             onBotao2Pressed: () async {
               print('Salvado');
               await _salvarMovimentacao(context);
-              provOrigemDestino.limpar();
+              provOrigemDestino.limpar(); // Limpar os dados após salvar
               Navigator.of(context).pop();
-              onPressed();
+              Navigator.of(context).pushReplacementNamed('/hist_mov');
             },
           );
         },

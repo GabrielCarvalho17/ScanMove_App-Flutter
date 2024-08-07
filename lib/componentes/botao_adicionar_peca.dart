@@ -14,6 +14,7 @@ class BotaoAdicionarPeca extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ProvOrigemDestino>(
       builder: (context, provOrigemDestino, child) {
+        print('Origem no botão: ${provOrigemDestino.origem}'); // Adicione este print
         return Container(
           width: 55.0,
           height: 55.0,
@@ -52,10 +53,11 @@ class BotaoAdicionarPeca extends StatelessWidget {
 
     try {
       final scanResult = await BarcodeScanner.scan();
+      print('Resultado do scan: ${scanResult.rawContent}'); // Adicione este print
 
       // Verifica se o resultado é vazio
       if (scanResult.rawContent.isEmpty) {
-        // O usuário cancelou o scan; não faz nada e retorna null
+        print('Código de barras vazio.'); // Adicione este print
         return null;
       }
 
@@ -65,6 +67,7 @@ class BotaoAdicionarPeca extends StatelessWidget {
       }
 
       final pecaModel = await servPeca.fetchPeca(barcode);
+      print('Modelo de peça: ${pecaModel.toString()}'); // Adicione este print
 
       if (pecaModel.localizacao != origem) {
         showDialog(
@@ -91,6 +94,7 @@ class BotaoAdicionarPeca extends StatelessWidget {
         'qtde': pecaModel.qtde,
       };
     } on PecaNotFoundException catch (e) {
+      print('Peça não encontrada: ${e.message}'); // Adicione este print
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -102,7 +106,7 @@ class BotaoAdicionarPeca extends StatelessWidget {
       );
       return null;
     } catch (e) {
-      print(e);
+      print('Erro: $e'); // Adicione este print
       showDialog(
         context: context,
         builder: (BuildContext context) {
