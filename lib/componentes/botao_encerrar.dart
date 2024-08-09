@@ -7,36 +7,29 @@ class BotaoEncerrar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(15, 7, 8, 7),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white, width: 1), // Define a borda branca
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: TextButton(
-          onPressed: () {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: () {
             onPressed();
           },
-          style: TextButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: Size(0, 0),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+          child: CircleAvatar(
+            radius: 20, // Ajuste o tamanho do botão circular
+            backgroundColor: Color(0xFF1A7F64), // Cor de fundo do botão
+            child: Icon(
+              Icons.arrow_forward,
+              color: Colors.white, // Cor do ícone
+              size: 24, // Ajuste o tamanho do ícone
             ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Encerrar', style: TextStyle(color: Colors.white, fontSize: 16)),
-              SizedBox(width: 8),
-              Icon(Icons.arrow_forward, color: Colors.white, size: 25),
-            ],
-          ),
         ),
-      ),
+        SizedBox(height: 4), // Ajuste o espaçamento entre o ícone e o texto
+        Text(
+          'Encerrar',
+          style: TextStyle(color: Colors.white, fontSize: 14), // Ajuste o tamanho do texto
+        ),
+      ],
     );
   }
 }

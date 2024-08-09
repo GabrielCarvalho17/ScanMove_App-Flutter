@@ -11,6 +11,7 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onSearchClose;
   final ValueChanged<String>? onSearchChanged;
   final double customHeight;
+  final bool showDrawerIcon; // Novo parâmetro para controlar a exibição do ícone do drawer
 
   const CustomAppBar({
     Key? key,
@@ -23,6 +24,7 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
     this.onSearchClose,
     this.onSearchChanged,
     this.customHeight = kToolbarHeight,
+    this.showDrawerIcon = true, // Valor padrão para mostrar o ícone do drawer
   }) : super(key: key);
 
   @override
@@ -42,10 +44,10 @@ class _CustomAppBarState extends State<CustomAppBar> {
     return PreferredSize(
       preferredSize: widget.preferredSize,
       child: AppBar(
-        titleSpacing: 0,
+        titleSpacing: widget.showLeading && widget.showDrawerIcon ? 0 : NavigationToolbar.kMiddleSpacing,
         leading: _isSearching
             ? null
-            : (widget.showLeading
+            : (widget.showLeading && widget.showDrawerIcon
             ? IconButton(
           icon: Icon(Icons.menu, color: Colors.white),
           onPressed: () {
@@ -71,12 +73,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
             },
             onSearchChanged: widget.onSearchChanged ?? (value) {},
           )
-              : Container(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              widget.titleText,
-              style: TextStyle(color: Colors.white, fontSize: 20),
-            ),
+              : Text(
+            widget.titleText,
+            style: TextStyle(color: Colors.white, fontSize: 20),
           ),
         ),
         backgroundColor: Theme.of(context).primaryColor,

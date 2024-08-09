@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:AppEstoqueMP/servicos/sqlite.dart';
+import 'package:AppEstoqueMP/componentes/movimentacao.dart';
 import 'package:AppEstoqueMP/componentes/drawer.dart';
 import 'package:AppEstoqueMP/componentes/app_bar.dart';
 import 'package:AppEstoqueMP/componentes/floatactionbutton.dart';
-import 'package:AppEstoqueMP/componentes/movimentacao.dart';
-import 'package:AppEstoqueMP/servicos/sqlite.dart';
+import 'package:AppEstoqueMP/componentes/dialogo.dart';  // Importar o dialogo
 
 class HistMov extends StatefulWidget {
   @override
@@ -21,30 +22,58 @@ class _HistMovState extends State<HistMov> {
   }
 
   Future<void> _carregarMovimentacoes() async {
-    final SQLite dbHelper = SQLite();
-    final movs = await dbHelper.obterEstoqueMatMov();
+    final db = SQLite();
+    final movs = await db.obterMovimentos();
     setState(() {
       movimentacoes = movs;
     });
   }
 
-  Future<void> _removerMovimentacao(int index) async {
-    final SQLite dbHelper = SQLite();
-    int movimentacaoId = movimentacoes[index]['mov_sqlite'];
+  void _deletarMovimentacao(int id) async {
+    final db = SQLite();
+    await db.deletarMovimento(id);
+    _carregarMovimentacoes(); // Recarrega as movimentações após a exclusão
+  }
 
-    // Exclua os itens associados à movimentação
-    await dbHelper.deletarEstoqueMatMovItensPorMovimentacao(movimentacaoId, movimentacoes[index]['mov_servidor']);
+  Future<bool> _confirmDismiss(BuildContext context, Map<String, dynamic> mov) async {
+    if (mov['status'] == 'Finalizada') {
+      // Exibe o diálogo de erro se o status for 'Finalizada'
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return DialogoErro(
+            titulo: 'Ação Impossível',
+            mensagem: 'Não é possível excluir uma movimentação finalizada.',
+          );
+        },
+      );
+      return false; // Não permite a exclusão
+    }
 
-    // Exclua a movimentação
-    await dbHelper.deletarEstoqueMatMov(movimentacaoId);
+    bool shouldDelete = false;
 
-    setState(() {
-      movimentacoes.removeAt(index);
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Movimentação removida')),
+    // Exibe o diálogo de confirmação se o status não for 'Finalizada'
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DialogoErro(
+          titulo: 'Confirmar Exclusão',
+          mensagem: 'Você realmente deseja excluir esta movimentação?',
+          textoBotao1: 'Cancelar',
+          onBotao1Pressed: () {
+            shouldDelete = false;
+            Navigator.of(context).pop();
+          },
+          textoBotao2: 'Excluir',
+          onBotao2Pressed: () {
+            shouldDelete = true;
+            Navigator.of(context).pop();
+          },
+        );
+      },
     );
+
+    return shouldDelete;
   }
 
   @override
@@ -69,42 +98,41 @@ class _HistMovState extends State<HistMov> {
       body: movimentacoes.isEmpty
           ? Center(child: Text('Nenhuma movimentação encontrada'))
           : ListView.builder(
-        padding: const EdgeInsets.only(top: 16.0, bottom: 30),
+        padding: EdgeInsets.only(top: 16, bottom: 30),
         itemCount: movimentacoes.length,
         itemBuilder: (context, index) {
           final mov = movimentacoes[index];
           return Dismissible(
             key: Key(mov['mov_sqlite'].toString()),
             direction: DismissDirection.endToStart,
-            onDismissed: (direction) async {
-              await _removerMovimentacao(index);
+            confirmDismiss: (direction) async {
+              if (direction == DismissDirection.endToStart) {
+                return await _confirmDismiss(context, mov);
+              }
+              return false;
+            },
+            onDismissed: (direction) {
+              if (direction == DismissDirection.endToStart) {
+                _deletarMovimentacao(mov['mov_sqlite']);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Movimentação ${mov['mov_sqlite']} deletada')),
+                );
+              }
             },
             background: Container(
-              color: Theme.of(context).primaryColor,
+              color: Theme.of(context).colorScheme.primary,
               alignment: Alignment.centerRight,
               padding: EdgeInsets.symmetric(horizontal: 20.0),
-              child: Icon(
-                Icons.delete,
-                color: Colors.white,
-              ),
+              child: Icon(Icons.delete, color: Colors.white),
             ),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  '/nova_mov',
-                  arguments: mov['mov_sqlite'],
-                );
-              },
-              child: Movimentacao(
-                id: mov['mov_sqlite'],
-                data: DateTime.parse(mov['data']),
-                origem: mov['origem'],
-                destino: mov['destino'],
-                totalPecas: mov['total_pecas'],
-                usuario: mov['usuario'],
-                status: mov['status'],
-              ),
+            child: Movimentacao(
+              id: mov['mov_sqlite'],
+              data: DateTime.parse(mov['data']),
+              origem: mov['origem'],
+              destino: mov['destino'] ?? 'N/A',
+              totalPecas: mov['total_pecas'],
+              usuario: mov['usuario'],
+              status: mov['status'],
             ),
           );
         },

@@ -56,7 +56,6 @@ class BotaoAdicionarPeca extends StatelessWidget {
       final scanResult = await BarcodeScanner.scan();
       print('Resultado do scan: ${scanResult.rawContent}');
 
-      // Verifica se o resultado é vazio
       if (scanResult.rawContent.isEmpty) {
         print('Código de barras vazio.');
         return null;
@@ -90,8 +89,8 @@ class BotaoAdicionarPeca extends StatelessWidget {
         'descMaterial': pecaModel.descMaterial,
         'cor': pecaModel.cor,
         'descCor': pecaModel.descCor,
-        'localizacao': pecaModel.localizacao, // Adicionar localização
-        'filial': pecaModel.filial, // Adicionar filial
+        'localizacao': pecaModel.localizacao,
+        'filial': pecaModel.filial,
         'unidade': pecaModel.unidade,
         'qtde': pecaModel.qtde,
       };

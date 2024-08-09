@@ -35,7 +35,7 @@ class ServLocalizacao {
   }
 
   Future<http.Response> _fetchLocalizacao(String localizacao) async {
-    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuario();
+    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuarios();
     if (users.isEmpty) {
       throw Exception('Usuário não encontrado no banco de dados.');
     }

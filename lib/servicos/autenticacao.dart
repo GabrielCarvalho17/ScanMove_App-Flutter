@@ -25,7 +25,7 @@ class ServAutenticacao {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
 
-        final List<Map<String, dynamic>> users = await _dbHelper.obterUsuario();
+        final List<Map<String, dynamic>> users = await _dbHelper.obterUsuarios();
 
         if (users.isNotEmpty) {
           await _dbHelper.atualizarUsuario(users.first['id'], {
@@ -34,7 +34,7 @@ class ServAutenticacao {
             'refresh_token': data['refresh'],
           });
         } else {
-          await _dbHelper.inserirUsuario({
+          await _dbHelper.adicionarUsuario({
             'username': username,
             'access_token': data['access'],
             'refresh_token': data['refresh'],
@@ -51,7 +51,7 @@ class ServAutenticacao {
   }
 
   Future<void> refreshToken() async {
-    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuario();
+    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuarios();
     if (users.isNotEmpty) {
       final String refreshToken = users.first['refresh_token'];
       final response = await http.post(
@@ -102,7 +102,7 @@ class ServAutenticacao {
   }
 
   Future<http.Response> get(String url) async {
-    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuario();
+    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuarios();
     final String token = users.isNotEmpty ? users.first['access_token'] : '';
 
     return makeAuthenticatedRequest(() {
@@ -117,7 +117,7 @@ class ServAutenticacao {
   }
 
   Future<http.Response> post(String url, Map<String, dynamic> body) async {
-    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuario();
+    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuarios();
     final String token = users.isNotEmpty ? users.first['access_token'] : '';
 
     return makeAuthenticatedRequest(() {
@@ -133,7 +133,7 @@ class ServAutenticacao {
   }
 
   Future<void> logout() async {
-    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuario();
+    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuarios();
     if (users.isNotEmpty) {
       await _dbHelper.atualizarUsuario(users.first['id'], {
         'access_token': '',

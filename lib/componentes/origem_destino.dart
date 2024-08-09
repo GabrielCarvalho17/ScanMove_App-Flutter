@@ -4,12 +4,13 @@ import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 import 'package:AppEstoqueMP/servicos/localizacao.dart';
 import 'package:AppEstoqueMP/provedores/origem_destino.dart';
-import 'package:AppEstoqueMP/provedores/peca.dart'; // Importar o novo provedor
+import 'package:AppEstoqueMP/provedores/peca.dart';
 
 class FormOrigemDestino extends StatefulWidget implements PreferredSizeWidget {
   final Map<String, String>? dados;
+  final bool isReadOnly; // Novo parâmetro
 
-  const FormOrigemDestino({Key? key, this.dados}) : super(key: key);
+  const FormOrigemDestino({Key? key, this.dados, this.isReadOnly = false}) : super(key: key);
 
   @override
   _FormOrigemDestinoState createState() => _FormOrigemDestinoState();
@@ -52,7 +53,6 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
     origemController.addListener(() {
       final provPeca = Provider.of<ProvPeca>(context, listen: false);
       if (provOrigemDestino.origem != origemController.text) {
-        // Verificação de localização
         if (provPeca.ultimaLocalizacao.isNotEmpty && provPeca.ultimaLocalizacao != origemController.text) {
           origemController.text = provOrigemDestino.origem; // Reset to previous value
           showDialog(
@@ -95,6 +95,8 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
   }
 
   Future<void> insereLocalizacao(TextEditingController controller, String campo) async {
+    if (widget.isReadOnly) return; // Impedir a inserção de localização se estiver em modo somente leitura
+
     var result = await BarcodeScanner.scan();
 
     if (result.type == ResultType.Barcode) {
@@ -207,7 +209,7 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
                           ),
                         ),
                         style: TextStyle(color: Colors.white),
-                        onTap: () => insereLocalizacao(origemController, 'Origem'),
+                        onTap: widget.isReadOnly ? null : () => insereLocalizacao(origemController, 'Origem'), // Desabilitar se somente leitura
                       ),
                     ),
                     Padding(
@@ -235,7 +237,9 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
                           ),
                         ),
                         style: TextStyle(color: Colors.white),
-                        onTap: () {
+                        onTap: widget.isReadOnly
+                            ? null
+                            : () {
                           if (origemController.text.isEmpty) {
                             showDialog(
                               context: context,

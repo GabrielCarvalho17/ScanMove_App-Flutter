@@ -9,13 +9,15 @@ import 'package:AppEstoqueMP/componentes/botao_adicionar_peca.dart';
 import 'package:AppEstoqueMP/componentes/botao_retornar.dart';
 import 'package:AppEstoqueMP/componentes/botao_encerrar.dart';
 import 'package:AppEstoqueMP/provedores/origem_destino.dart';
+import 'package:AppEstoqueMP/provedores/peca.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
 
 class NovaMov extends StatefulWidget {
   final int? id;
+  final String? status;
 
-  NovaMov({this.id});
+  NovaMov({this.id, this.status});
 
   @override
   _NovaMovState createState() => _NovaMovState();
@@ -24,6 +26,7 @@ class NovaMov extends StatefulWidget {
 class _NovaMovState extends State<NovaMov> {
   List<Map<String, dynamic>> pecas = [];
   bool isFabVisible = true;
+  bool isReadOnly = false;
   final SQLite _dbHelper = SQLite();
   Map<String, String>? dadosMovimentacao;
 
@@ -33,12 +36,18 @@ class _NovaMovState extends State<NovaMov> {
     if (widget.id != null) {
       _carregarMovimentacao(widget.id!);
     }
+    if (widget.status == 'Finalizada') {
+      setState(() {
+        isReadOnly = true;
+        isFabVisible = false;
+      });
+    }
   }
 
   Future<void> _carregarMovimentacao(int id) async {
     final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
-    final movimentacao = await _dbHelper.obterEstoqueMatMovPorId(id);
-    final itens = await _dbHelper.obterEstoqueMatMovItensPorMovimentacao(id, movimentacao['mov_servidor']);
+    final movimentacao = await _dbHelper.obterMovimentoPorId(id);
+    final itens = await _dbHelper.obterItensPorMovimento(id, movimentacao['mov_servidor']);
 
     if (movimentacao.isNotEmpty) {
       dadosMovimentacao = {
@@ -63,6 +72,7 @@ class _NovaMovState extends State<NovaMov> {
         'unidade': item['unidade'],
         'qtde': (item['quantidade'] is int) ? item['quantidade'].toDouble() : item['quantidade'],
         'filial': item['filial'],
+        'localizacao': item['localizacao'],
       }).toList();
     });
   }
@@ -80,6 +90,7 @@ class _NovaMovState extends State<NovaMov> {
       setState(() {
         pecas.add(peca);
       });
+      Provider.of<ProvPeca>(context, listen: false).setUltimaPeca(peca['localizacao'], peca['filial']);
     }
   }
 
@@ -95,9 +106,10 @@ class _NovaMovState extends State<NovaMov> {
       backgroundColor: Color(0xFFf3f3f3),
       appBar: CustomAppBar(
         titleText: 'Movimentar',
-        bottom: FormOrigemDestino(dados: dadosMovimentacao),
+        bottom: FormOrigemDestino(dados: dadosMovimentacao, isReadOnly: isReadOnly),
         onSearchOpen: () => setState(() => isFabVisible = false),
         onSearchClose: () => setState(() => isFabVisible = true),
+        showDrawerIcon: false, // Oculta o ícone do drawer nesta tela
       ),
       drawer: CustomDrawer(),
       body: ListView.builder(
@@ -131,18 +143,21 @@ class _NovaMovState extends State<NovaMov> {
       bottomNavigationBar: CustomBottomAppBar(
         botaoVoltar: BotaoRetornar(
           pecas: pecas,
-          onPressed: () => Navigator.of(context).pushReplacementNamed('/hist_mov'),
+          status: widget.status,
+          movimentacaoId: widget.id,
         ),
-        botaoFinalizar: BotaoEncerrar(
+        botaoFinalizar: isReadOnly
+            ? SizedBox.shrink() // Oculta o botão de finalizar se a movimentação estiver finalizada
+            : BotaoEncerrar(
           onPressed: () => print('Encerrar!'),
         ),
         contadorPecas: pecas.length,
+        exibirTextoTotal: isReadOnly,
       ),
-      floatingActionButton: Visibility(
-        visible: isFabVisible,
-        child: BotaoAdicionarPeca(
-          onPecaAdicionada: adicionarPeca,
-        ),
+      floatingActionButton: isReadOnly
+          ? null // Oculta o botão de adicionar peça se a movimentação estiver finalizada
+          : BotaoAdicionarPeca(
+        onPecaAdicionada: adicionarPeca,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );

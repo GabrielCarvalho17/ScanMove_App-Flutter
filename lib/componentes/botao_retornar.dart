@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/provedores/origem_destino.dart';
+import 'package:AppEstoqueMP/provedores/peca.dart';
 import 'package:AppEstoqueMP/provedores/usuario.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
 
 class BotaoRetornar extends StatelessWidget {
-  final VoidCallback onPressed;
   final List<Map<String, dynamic>> pecas;
+  final String? status;
+  final int? movimentacaoId;
   final SQLite _dbHelper = SQLite();
 
-  BotaoRetornar({required this.onPressed, required this.pecas});
+  BotaoRetornar({required this.pecas, this.status, this.movimentacaoId});
 
   Future<void> _salvarMovimentacao(BuildContext context) async {
     final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
     final provUsuario = Provider.of<ProvUsuario>(context, listen: false);
 
-    // Dados da movimentação
     Map<String, dynamic> dadosMovimentacao = {
       'data': DateTime.now().toIso8601String(),
       'usuario': provUsuario.username,
@@ -28,10 +29,9 @@ class BotaoRetornar extends StatelessWidget {
       'status': 'Andamento',
     };
 
-    // Inserir movimentação
-    int movimentacaoId = await _dbHelper.inserirEstoqueMatMov(dadosMovimentacao);
+    int id = movimentacaoId ?? await _dbHelper.adicionarMovimento(dadosMovimentacao);
 
-    // Inserir peças na tabela ESTOQUE_MAT_MOV_ITEM
+    // Adiciona os itens relacionados a esta movimentação
     for (var peca in pecas) {
       Map<String, dynamic> dadosPeca = {
         'peca': peca['peca'],
@@ -40,24 +40,59 @@ class BotaoRetornar extends StatelessWidget {
         'partida': peca['partida'],
         'unidade': peca['unidade'],
         'quantidade': peca['qtde'],
-        'mov_sqlite': movimentacaoId,
+        'mov_sqlite': id, // Associando corretamente ao ID da movimentação
         'desc_material': peca['descMaterial'],
         'desc_cor_material': peca['descCor'],
-        'localizacao': provOrigemDestino.origem, // Usando a origem como localizacao
-        'filial': provOrigemDestino.filialOrigem, // Usando a filial de origem
+        'localizacao': provOrigemDestino.origem,
+        'filial': provOrigemDestino.filialOrigem,
       };
-      await _dbHelper.inserirEstoqueMatMovItem(dadosPeca);
+      await _dbHelper.adicionarItem(dadosPeca);
+    }
+  }
+
+  Future<void> _finalizarMovimentacao(BuildContext context) async {
+    if (movimentacaoId != null) {
+      await _dbHelper.finalizarMovimento(movimentacaoId!);
     }
   }
 
   void _mostrarDialogoConfirmacao(BuildContext context) {
     final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
-    if (provOrigemDestino.origem.isEmpty || pecas.isEmpty) {
-      // Se a origem não foi informada ou não há peças, volta diretamente para a rota 'hist_mov'
+    final provPeca = Provider.of<ProvPeca>(context, listen: false);
+
+    void limparEIrParaHistorico() {
       provOrigemDestino.limpar();
+      provPeca.limpar();
       Navigator.of(context).pushReplacementNamed('/hist_mov');
+    }
+
+    if (status == 'Finalizada') {
+      limparEIrParaHistorico();
+    } else if (provOrigemDestino.origem.isEmpty || pecas.isEmpty) {
+      limparEIrParaHistorico();
+    } else if (status == 'Andamento') {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return DialogoErro(
+            titulo: 'Atenção!',
+            mensagem: 'Deseja finalizar a movimentação ou apenas sair?',
+            alturaMinimaTexto: 40,
+            textoBotao1: 'Sair',
+            onBotao1Pressed: () {
+              Navigator.of(context).pop();
+              limparEIrParaHistorico();
+            },
+            textoBotao2: 'Finalizar',
+            onBotao2Pressed: () async {
+              await _finalizarMovimentacao(context);
+              Navigator.of(context).pop();
+              limparEIrParaHistorico();
+            },
+          );
+        },
+      );
     } else {
-      // Se a origem foi informada e há peças, mostra o diálogo de confirmação
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -67,18 +102,14 @@ class BotaoRetornar extends StatelessWidget {
             alturaMinimaTexto: 40,
             textoBotao1: 'Cancelar',
             onBotao1Pressed: () {
-              print('Cancelar');
-              provOrigemDestino.limpar(); // Limpar os dados ao cancelar
               Navigator.of(context).pop();
-              Navigator.of(context).pushReplacementNamed('/hist_mov');
+              limparEIrParaHistorico();
             },
             textoBotao2: 'Salvar',
             onBotao2Pressed: () async {
-              print('Salvado');
               await _salvarMovimentacao(context);
-              provOrigemDestino.limpar(); // Limpar os dados após salvar
               Navigator.of(context).pop();
-              Navigator.of(context).pushReplacementNamed('/hist_mov');
+              limparEIrParaHistorico();
             },
           );
         },
@@ -88,30 +119,29 @@ class BotaoRetornar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(8, 7, 15, 7),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white, width: 1), // Define a borda branca
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: TextButton.icon(
-          onPressed: () {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: () {
             _mostrarDialogoConfirmacao(context);
           },
-          icon: Icon(Icons.arrow_back, color: Colors.white, size: 25),
-          label: Text('Retornar', style: TextStyle(color: Colors.white, fontSize: 16)),
-          style: TextButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: Size(0, 0),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+          child: CircleAvatar(
+            radius: 20, // Ajuste o tamanho do botão circular
+            backgroundColor: Colors.white, // Cor de fundo do botão
+            child: Icon(
+              Icons.arrow_back,
+              color: Theme.of(context).colorScheme.primary, // Cor do ícone
+              size: 24, // Ajuste o tamanho do ícone
             ),
           ),
         ),
-      ),
+        SizedBox(height: 4), // Ajuste o espaçamento entre o ícone e o texto
+        Text(
+          'Retornar',
+          style: TextStyle(color: Colors.white, fontSize: 14), // Ajuste o tamanho do texto
+        ),
+      ],
     );
   }
 }

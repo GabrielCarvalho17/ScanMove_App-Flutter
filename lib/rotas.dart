@@ -9,19 +9,21 @@ class Rotas {
   static const String novaMov = '/nova_mov';
 
   static Route<dynamic> gerarRota(RouteSettings settings) {
-    final args = settings.arguments;
+    final args = settings.arguments as Map<String, dynamic>?;
     switch (settings.name) {
       case login:
         return MaterialPageRoute(builder: (_) => Login());
       case histMov:
         return MaterialPageRoute(builder: (_) => HistMov());
       case novaMov:
-        if (args is int) {
-          return MaterialPageRoute(builder: (_) => NovaMov(id: args));
-        }
-        return MaterialPageRoute(builder: (_) => NovaMov());
+        return MaterialPageRoute(builder: (_) => NovaMov(
+          id: args?['id'],
+          status: args?['status'],
+        ));
       default:
         return MaterialPageRoute(builder: (_) => HistMov());
     }
   }
 }
+
+
