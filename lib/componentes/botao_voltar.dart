@@ -6,13 +6,13 @@ import 'package:AppEstoqueMP/provedores/usuario.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
 
-class BotaoRetornar extends StatelessWidget {
+class BotaoVoltar extends StatelessWidget {
   final List<Map<String, dynamic>> pecas;
   final String? status;
   final int? movimentacaoId;
   final SQLite _dbHelper = SQLite();
 
-  BotaoRetornar({required this.pecas, this.status, this.movimentacaoId});
+  BotaoVoltar({required this.pecas, this.status, this.movimentacaoId});
 
   Future<void> _salvarMovimentacao(BuildContext context) async {
     final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
@@ -31,7 +31,6 @@ class BotaoRetornar extends StatelessWidget {
 
     int id = movimentacaoId ?? await _dbHelper.adicionarMovimento(dadosMovimentacao);
 
-    // Adiciona os itens relacionados a esta movimentação
     for (var peca in pecas) {
       Map<String, dynamic> dadosPeca = {
         'peca': peca['peca'],
@@ -40,7 +39,7 @@ class BotaoRetornar extends StatelessWidget {
         'partida': peca['partida'],
         'unidade': peca['unidade'],
         'quantidade': peca['qtde'],
-        'mov_sqlite': id, // Associando corretamente ao ID da movimentação
+        'mov_sqlite': id,
         'desc_material': peca['descMaterial'],
         'desc_cor_material': peca['descCor'],
         'localizacao': provOrigemDestino.origem,
@@ -119,29 +118,11 @@ class BotaoRetornar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: () {
-            _mostrarDialogoConfirmacao(context);
-          },
-          child: CircleAvatar(
-            radius: 20, // Ajuste o tamanho do botão circular
-            backgroundColor: Colors.white, // Cor de fundo do botão
-            child: Icon(
-              Icons.arrow_back,
-              color: Theme.of(context).colorScheme.primary, // Cor do ícone
-              size: 24, // Ajuste o tamanho do ícone
-            ),
-          ),
-        ),
-        SizedBox(height: 4), // Ajuste o espaçamento entre o ícone e o texto
-        Text(
-          'Retornar',
-          style: TextStyle(color: Colors.white, fontSize: 14), // Ajuste o tamanho do texto
-        ),
-      ],
+    return IconButton(
+      icon: Icon(Icons.arrow_back, color: Colors.white),
+      onPressed: () {
+        _mostrarDialogoConfirmacao(context);
+      },
     );
   }
 }

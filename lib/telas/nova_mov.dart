@@ -3,12 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/componentes/drawer.dart';
 import 'package:AppEstoqueMP/componentes/app_bar.dart';
 import 'package:AppEstoqueMP/componentes/origem_destino.dart';
-import 'package:AppEstoqueMP/componentes/bottom_app_bar.dart';
 import 'package:AppEstoqueMP/componentes/peca.dart';
 import 'package:AppEstoqueMP/componentes/botao_adicionar_peca.dart';
-import 'package:AppEstoqueMP/componentes/botao_retornar.dart';
 import 'package:AppEstoqueMP/componentes/botao_encerrar.dart';
 import 'package:AppEstoqueMP/provedores/origem_destino.dart';
+import 'package:AppEstoqueMP/componentes/botao_voltar.dart';
 import 'package:AppEstoqueMP/provedores/peca.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
@@ -46,6 +45,7 @@ class _NovaMovState extends State<NovaMov> {
 
   Future<void> _carregarMovimentacao(int id) async {
     final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
+    final provPeca = Provider.of<ProvPeca>(context, listen: false);
     final movimentacao = await _dbHelper.obterMovimentoPorId(id);
     final itens = await _dbHelper.obterItensPorMovimento(id, movimentacao['mov_servidor']);
 
@@ -59,6 +59,13 @@ class _NovaMovState extends State<NovaMov> {
 
       provOrigemDestino.setOrigem(movimentacao['origem'], filial: movimentacao['filial_origem']);
       provOrigemDestino.setDestino(movimentacao['destino'], filial: movimentacao['filial_destino']);
+
+      if (itens.isNotEmpty) {
+        final ultimaPeca = itens.last;
+        provPeca.setUltimaPeca(ultimaPeca['localizacao'], ultimaPeca['filial']);
+      } else {
+        provPeca.limpar(); // Limpa caso não haja itens
+      }
     }
 
     setState(() {
@@ -107,9 +114,13 @@ class _NovaMovState extends State<NovaMov> {
       appBar: CustomAppBar(
         titleText: 'Movimentar',
         bottom: FormOrigemDestino(dados: dadosMovimentacao, isReadOnly: isReadOnly),
-        onSearchOpen: () => setState(() => isFabVisible = false),
-        onSearchClose: () => setState(() => isFabVisible = true),
-        showDrawerIcon: false, // Oculta o ícone do drawer nesta tela
+        onSearchOpen: () => setState(() => isFabVisible = false),  // Oculta FABs ao abrir a pesquisa
+        onSearchClose: () => setState(() => isFabVisible = true),  // Mostra FABs ao fechar a pesquisa
+        customLeading: BotaoVoltar(
+          pecas: pecas,
+          status: widget.status,
+          movimentacaoId: widget.id,
+        ),
       ),
       drawer: CustomDrawer(),
       body: ListView.builder(
@@ -140,26 +151,31 @@ class _NovaMovState extends State<NovaMov> {
           );
         },
       ),
-      bottomNavigationBar: CustomBottomAppBar(
-        botaoVoltar: BotaoRetornar(
-          pecas: pecas,
-          status: widget.status,
-          movimentacaoId: widget.id,
+      floatingActionButton: Visibility(
+        visible: isFabVisible,  // Controla a visibilidade dos FABs
+        child: Padding(
+          padding: const EdgeInsets.only(left: 32, right: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SizedBox(width: 40), // Espaço vazio para manter o botão centralizado
+              BotaoAdicionarPeca(
+                onPecaAdicionada: (peca) {
+                  adicionarPeca(peca);
+                },
+                heroTag: 'uniqueAddPecaButtonForNovaMov',  // Hero tag único para evitar conflitos
+              ),
+              BotaoEncerrar(
+                onPressed: () {
+                  print('Encerrar!');
+                },
+                heroTag: 'uniqueEncerrarButtonForNovaMov',  // Hero tag único para evitar conflitos
+              ),
+            ],
+          ),
         ),
-        botaoFinalizar: isReadOnly
-            ? SizedBox.shrink() // Oculta o botão de finalizar se a movimentação estiver finalizada
-            : BotaoEncerrar(
-          onPressed: () => print('Encerrar!'),
-        ),
-        contadorPecas: pecas.length,
-        exibirTextoTotal: isReadOnly,
       ),
-      floatingActionButton: isReadOnly
-          ? null // Oculta o botão de adicionar peça se a movimentação estiver finalizada
-          : BotaoAdicionarPeca(
-        onPecaAdicionada: adicionarPeca,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

@@ -94,6 +94,7 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
     super.dispose();
   }
 
+
   Future<void> insereLocalizacao(TextEditingController controller, String campo) async {
     if (widget.isReadOnly) return; // Impedir a inserção de localização se estiver em modo somente leitura
 
@@ -102,24 +103,66 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
     if (result.type == ResultType.Barcode) {
       String rawContent = result.rawContent;
 
-      setState(() {
-        controller.text = rawContent;
-      });
-
       try {
+        // Tenta buscar a localização antes de atualizar o campo
         var localizacao = await _servLocalizacao.fetchLocalizacao(rawContent);
         print("Localização obtida: ${localizacao.localizacao}, Filial: ${localizacao.filial}");
 
+        // Validação de origem versus última localização da peça
+        final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
+        final provPeca = Provider.of<ProvPeca>(context, listen: false);
+
+        bool validacaoFalhou = false;
+
+        // Validação 1: Origem versus última localização da peça
+        if (campo == 'Origem' && provPeca.ultimaLocalizacao.isNotEmpty && provPeca.ultimaLocalizacao != localizacao.localizacao) {
+          validacaoFalhou = true;
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return DialogoErro(
+                titulo: 'Atenção',
+                mensagem: 'A nova origem não corresponde à localização das peças já adicionadas.',
+              );
+            },
+          );
+        }
+
+        // Validação 2: Origem e destino não podem ser iguais
+        if (campo == 'Origem' && provOrigemDestino.destino.isNotEmpty && rawContent == provOrigemDestino.destino) {
+          validacaoFalhou = true;
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return DialogoErro(
+                titulo: 'Erro',
+                mensagem: 'Origem e destino não podem ser iguais!',
+              );
+            },
+          );
+        }
+
+        if (validacaoFalhou) {
+          return; // Se qualquer validação falhar, interrompe a execução
+        }
+
+        // Se todas as validações passarem, atualiza o TextEditingController e o provedor
+        setState(() {
+          controller.text = rawContent; // Atualiza o campo só se a localização for válida
+        });
+
         if (campo == 'Origem') {
-          context.read<ProvOrigemDestino>().setOrigem(rawContent, filial: localizacao.filial);
+          provOrigemDestino.setOrigem(rawContent, filial: localizacao.filial);
         } else {
-          context.read<ProvOrigemDestino>().setDestino(rawContent, filial: localizacao.filial);
+          provOrigemDestino.setDestino(rawContent, filial: localizacao.filial);
         }
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           verificarOrigemDestino(campo);
         });
+
       } catch (e) {
+        // Se a localização não for encontrada ou outro erro ocorrer, exiba a mensagem de erro
         String errorMessage;
         if (e is LocalizacaoNotFoundException) {
           errorMessage = 'Localização não encontrada.';
@@ -135,17 +178,20 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
             );
           },
         );
+
+        // Não atualiza o controller nem o provedor, mantendo o estado anterior
         setState(() {
-          controller.clear();
+          controller.clear(); // Limpa o campo em caso de erro
           if (campo == 'Origem') {
-            context.read<ProvOrigemDestino>().setOrigem('');
+            context.read<ProvOrigemDestino>().setOrigem(''); // Mantém o estado anterior
           } else {
-            context.read<ProvOrigemDestino>().setDestino('');
+            context.read<ProvOrigemDestino>().setDestino(''); // Mantém o estado anterior
           }
         });
       }
     }
   }
+
 
   void verificarOrigemDestino(String campo) {
     String origem = context.read<ProvOrigemDestino>().origem;

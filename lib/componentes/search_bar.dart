@@ -17,7 +17,7 @@ class CustomSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(left: 16, right: 16),
+      margin: EdgeInsets.only(left: 1, right: 16),
       height: 40,
       width: double.infinity,
       decoration: BoxDecoration(

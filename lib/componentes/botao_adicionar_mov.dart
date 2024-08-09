@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-class BotaoFlutuante extends StatelessWidget {
+class BotaoAdicionarMov extends StatelessWidget {
   final Function()? onPressed;
+  final Object? heroTag;  // Adicionei o parâmetro heroTag
 
-  BotaoFlutuante({required this.onPressed});
+  BotaoAdicionarMov({required this.onPressed, this.heroTag});
 
   @override
   Widget build(BuildContext context) {
@@ -18,6 +19,7 @@ class BotaoFlutuante extends StatelessWidget {
         onPressed: onPressed,
         backgroundColor: Colors.transparent, // Transparent to show the container's color
         elevation: 5,
+        heroTag: heroTag,  // Utiliza a tag hero única
         child: Center(
           child: Icon(
             Icons.add,

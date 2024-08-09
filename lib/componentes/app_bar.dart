@@ -4,6 +4,7 @@ import 'search_bar.dart'; // Certifique-se de importar o CustomSearchBar
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String titleText;
   final List<Widget>? actions;
+  final Widget? customLeading; // Novo parâmetro para aceitar um botão customizado
   final bool showLeading;
   final bool showSearchIcon;
   final PreferredSizeWidget? bottom;
@@ -11,12 +12,13 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onSearchClose;
   final ValueChanged<String>? onSearchChanged;
   final double customHeight;
-  final bool showDrawerIcon; // Novo parâmetro para controlar a exibição do ícone do drawer
+  final bool showDrawerIcon; // Controla a exibição do ícone do drawer
 
   const CustomAppBar({
     Key? key,
     required this.titleText,
     this.actions,
+    this.customLeading,
     this.showLeading = true,
     this.showSearchIcon = true,
     this.bottom,
@@ -44,38 +46,44 @@ class _CustomAppBarState extends State<CustomAppBar> {
     return PreferredSize(
       preferredSize: widget.preferredSize,
       child: AppBar(
-        titleSpacing: widget.showLeading && widget.showDrawerIcon ? 0 : NavigationToolbar.kMiddleSpacing,
+        titleSpacing: 0, // Define o espaçamento do título para zero
         leading: _isSearching
             ? null
-            : (widget.showLeading && widget.showDrawerIcon
-            ? IconButton(
-          icon: Icon(Icons.menu, color: Colors.white),
-          onPressed: () {
-            Scaffold.of(context).openDrawer();
-          },
-        )
-            : null),
-        title: AnimatedSwitcher(
-          duration: Duration(milliseconds: 300),
-          child: _isSearching
-              ? CustomSearchBar(
-            controller: _searchController,
-            focusNode: _searchFocusNode,
-            onClose: () {
-              setState(() {
-                _isSearching = false;
-                _searchController.clear();
-                _searchFocusNode.unfocus();
-                if (widget.onSearchClose != null) {
-                  widget.onSearchClose!();
-                }
-              });
+            : (widget.showLeading
+            ? (widget.customLeading ?? Padding(
+          padding: const EdgeInsets.only(left: 16.0),
+          child: IconButton(
+            icon: Icon(Icons.menu, color: Colors.white),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
             },
-            onSearchChanged: widget.onSearchChanged ?? (value) {},
-          )
-              : Text(
-            widget.titleText,
-            style: TextStyle(color: Colors.white, fontSize: 20),
+          ),
+        ))
+            : null),
+        title: Padding(
+          padding: const EdgeInsets.only(left: 16.0), // Espaçamento padrão entre o título e o leading
+          child: AnimatedSwitcher(
+            duration: Duration(milliseconds: 300),
+            child: _isSearching
+                ? CustomSearchBar(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              onClose: () {
+                setState(() {
+                  _isSearching = false;
+                  _searchController.clear();
+                  _searchFocusNode.unfocus();
+                  if (widget.onSearchClose != null) {
+                    widget.onSearchClose!();
+                  }
+                });
+              },
+              onSearchChanged: widget.onSearchChanged ?? (value) {},
+            )
+                : Text(
+              widget.titleText,
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
           ),
         ),
         backgroundColor: Theme.of(context).primaryColor,
@@ -95,7 +103,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
             ),
           if (!_isSearching) ...?widget.actions,
         ],
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: false, // Controla manualmente o leading
         bottom: widget.bottom,
       ),
     );

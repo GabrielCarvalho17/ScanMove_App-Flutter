@@ -3,53 +3,64 @@ import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/servicos/peca.dart';
 import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:AppEstoqueMP/provedores/origem_destino.dart';
-import 'package:AppEstoqueMP/provedores/peca.dart'; // Importar o novo provedor
+import 'package:AppEstoqueMP/provedores/peca.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 
 class BotaoAdicionarPeca extends StatelessWidget {
   final Function(Map<String, dynamic>) onPecaAdicionada;
+  final Object? heroTag;  // Adiciona o parâmetro heroTag
 
-  const BotaoAdicionarPeca({required this.onPecaAdicionada, Key? key}) : super(key: key);
+  const BotaoAdicionarPeca({required this.onPecaAdicionada, this.heroTag, Key? key})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ProvOrigemDestino>(
       builder: (context, provOrigemDestino, child) {
         return Container(
-          width: 55.0,
-          height: 55.0,
-          child: FittedBox(
-            child: FloatingActionButton(
-              onPressed: () async {
-                if (provOrigemDestino.origem.isEmpty) {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return DialogoErro(
-                        titulo: 'Atenção',
-                        mensagem: 'Por favor, preencha o campo de origem primeiro.',
-                      );
-                    },
-                  );
-                } else {
-                  Map<String, dynamic>? peca = await _adicionarPeca(context, provOrigemDestino.origem);
-                  if (peca != null) {
-                    onPecaAdicionada(peca);
-                    Provider.of<ProvPeca>(context, listen: false).setUltimaPeca(peca['localizacao'], peca['filial']); // Atualizar o provedor de peça
-                  }
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: FloatingActionButton(
+            onPressed: () async {
+              if (provOrigemDestino.origem.isEmpty) {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return DialogoErro(
+                      titulo: 'Atenção',
+                      mensagem: 'Por favor, preencha o campo de origem primeiro.',
+                    );
+                  },
+                );
+              } else {
+                Map<String, dynamic>? peca =
+                await _adicionarPeca(context, provOrigemDestino.origem);
+                if (peca != null) {
+                  onPecaAdicionada(peca);
+                  Provider.of<ProvPeca>(context, listen: false).setUltimaPeca(
+                      peca['localizacao'], peca['filial']);
                 }
-              },
-              backgroundColor: Theme.of(context).primaryColor,
-              child: const Icon(Icons.add, size: 30.0),
-              shape: const CircleBorder(),
+              }
+            },
+            backgroundColor: Colors.transparent, // Transparent to show the container's color
+            elevation: 5,
+            heroTag: heroTag,  // Utiliza a tag hero única
+            child: Icon(
+              Icons.add,
+              size: 30.0,
+              color: Colors.white,
             ),
+            tooltip: 'Adicionar Peça',
           ),
         );
       },
     );
   }
 
-  Future<Map<String, dynamic>?> _adicionarPeca(BuildContext context, String origem) async {
+  Future<Map<String, dynamic>?> _adicionarPeca(
+      BuildContext context, String origem) async {
     final servPeca = ServPeca();
 
     try {

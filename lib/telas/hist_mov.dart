@@ -3,7 +3,7 @@ import 'package:AppEstoqueMP/servicos/sqlite.dart';
 import 'package:AppEstoqueMP/componentes/movimentacao.dart';
 import 'package:AppEstoqueMP/componentes/drawer.dart';
 import 'package:AppEstoqueMP/componentes/app_bar.dart';
-import 'package:AppEstoqueMP/componentes/floatactionbutton.dart';
+import 'package:AppEstoqueMP/componentes/botao_adicionar_mov.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';  // Importar o dialogo
 
 class HistMov extends StatefulWidget {
@@ -139,10 +139,11 @@ class _HistMovState extends State<HistMov> {
       ),
       floatingActionButton: Visibility(
         visible: isFabVisible,
-        child: BotaoFlutuante(
+        child: BotaoAdicionarMov(
           onPressed: () {
             Navigator.pushNamed(context, '/nova_mov');
           },
+          heroTag: 'uniqueEncerrarButtonForNovaMov',  // Hero tag único para evitar conflitos
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
