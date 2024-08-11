@@ -24,7 +24,6 @@ class NovaMov extends StatefulWidget {
 
 class _NovaMovState extends State<NovaMov> {
   List<Map<String, dynamic>> pecas = [];
-  bool isFabVisible = true;
   bool isReadOnly = false;
   final SQLite _dbHelper = SQLite();
   Map<String, String>? dadosMovimentacao;
@@ -38,7 +37,6 @@ class _NovaMovState extends State<NovaMov> {
     if (widget.status == 'Finalizada') {
       setState(() {
         isReadOnly = true;
-        isFabVisible = false;
       });
     }
   }
@@ -109,51 +107,50 @@ class _NovaMovState extends State<NovaMov> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFf3f3f3),
-      appBar: CustomAppBar(
-        titleText: 'Movimentar',
-        bottom: FormOrigemDestino(dados: dadosMovimentacao, isReadOnly: isReadOnly),
-        onSearchOpen: () => setState(() => isFabVisible = false),  // Oculta FABs ao abrir a pesquisa
-        onSearchClose: () => setState(() => isFabVisible = true),  // Mostra FABs ao fechar a pesquisa
-        customLeading: BotaoVoltar(
-          pecas: pecas,
-          status: widget.status,
-          movimentacaoId: widget.id,
+    return MediaQuery.removeViewInsets(
+      removeBottom: true,
+      context: context,
+      child: Scaffold(
+        backgroundColor: Color(0xFFf3f3f3),
+        appBar: CustomAppBar(
+          titleText: 'Movimentar',
+          bottom: FormOrigemDestino(dados: dadosMovimentacao, isReadOnly: isReadOnly),
+          customLeading: BotaoVoltar(
+            pecas: pecas,
+            status: widget.status,
+            movimentacaoId: widget.id,
+          ),
         ),
-      ),
-      drawer: CustomDrawer(),
-      body: ListView.builder(
-        padding: const EdgeInsets.only(top: 16.0, bottom: 30),
-        itemCount: pecas.length,
-        itemBuilder: (context, index) {
-          final peca = pecas[index];
-          return Dismissible(
-            key: Key(peca['peca']),
-            direction: DismissDirection.endToStart,
-            onDismissed: (direction) => removerPeca(index),
-            background: Container(
-              color: Theme.of(context).primaryColor,
-              alignment: Alignment.centerRight,
-              padding: EdgeInsets.symmetric(horizontal: 20.0),
-              child: Icon(Icons.delete, color: Colors.white),
-            ),
-            child: Peca(
-              peca: peca['peca'],
-              partida: peca['partida'],
-              material: peca['material'],
-              descMaterial: peca['descMaterial'] ?? '',
-              cor: peca['cor'] ?? '',
-              descCor: peca['descCor'] ?? '',
-              unidade: peca['unidade'] ?? '',
-              qtde: peca['qtde'] ?? 0.0,
-            ),
-          );
-        },
-      ),
-      floatingActionButton: Visibility(
-        visible: isFabVisible,  // Controla a visibilidade dos FABs
-        child: Padding(
+        drawer: CustomDrawer(),
+        body: ListView.builder(
+          padding: const EdgeInsets.only(top: 16.0, bottom: 30),
+          itemCount: pecas.length,
+          itemBuilder: (context, index) {
+            final peca = pecas[index];
+            return Dismissible(
+              key: Key(peca['peca']),
+              direction: DismissDirection.endToStart,
+              onDismissed: (direction) => removerPeca(index),
+              background: Container(
+                color: Theme.of(context).primaryColor,
+                alignment: Alignment.centerRight,
+                padding: EdgeInsets.symmetric(horizontal: 20.0),
+                child: Icon(Icons.delete, color: Colors.white),
+              ),
+              child: Peca(
+                peca: peca['peca'],
+                partida: peca['partida'],
+                material: peca['material'],
+                descMaterial: peca['descMaterial'] ?? '',
+                cor: peca['cor'] ?? '',
+                descCor: peca['descCor'] ?? '',
+                unidade: peca['unidade'] ?? '',
+                qtde: peca['qtde'] ?? 0.0,
+              ),
+            );
+          },
+        ),
+        floatingActionButton: Padding(
           padding: const EdgeInsets.only(left: 32, right: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -174,8 +171,8 @@ class _NovaMovState extends State<NovaMov> {
             ],
           ),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

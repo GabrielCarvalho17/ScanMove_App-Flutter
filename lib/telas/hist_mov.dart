@@ -12,7 +12,6 @@ class HistMov extends StatefulWidget {
 }
 
 class _HistMovState extends State<HistMov> {
-  bool isFabVisible = true;
   List<Map<String, dynamic>> movimentacoes = [];
 
   @override
@@ -78,75 +77,66 @@ class _HistMovState extends State<HistMov> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFf3f3f3),
-      appBar: CustomAppBar(
-        titleText: 'Histórico',
-        customHeight: 70,
-        onSearchOpen: () {
-          setState(() {
-            isFabVisible = false;
-          });
-        },
-        onSearchClose: () {
-          setState(() {
-            isFabVisible = true;
-          });
-        },
-      ),
-      drawer: CustomDrawer(),
-      body: movimentacoes.isEmpty
-          ? Center(child: Text('Nenhuma movimentação encontrada'))
-          : ListView.builder(
-        padding: EdgeInsets.only(top: 16, bottom: 30),
-        itemCount: movimentacoes.length,
-        itemBuilder: (context, index) {
-          final mov = movimentacoes[index];
-          return Dismissible(
-            key: Key(mov['mov_sqlite'].toString()),
-            direction: DismissDirection.endToStart,
-            confirmDismiss: (direction) async {
-              if (direction == DismissDirection.endToStart) {
-                return await _confirmDismiss(context, mov);
-              }
-              return false;
-            },
-            onDismissed: (direction) {
-              if (direction == DismissDirection.endToStart) {
-                _deletarMovimentacao(mov['mov_sqlite']);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Movimentação ${mov['mov_sqlite']} deletada')),
-                );
-              }
-            },
-            background: Container(
-              color: Theme.of(context).colorScheme.primary,
-              alignment: Alignment.centerRight,
-              padding: EdgeInsets.symmetric(horizontal: 20.0),
-              child: Icon(Icons.delete, color: Colors.white),
-            ),
-            child: Movimentacao(
-              id: mov['mov_sqlite'],
-              data: DateTime.parse(mov['data']),
-              origem: mov['origem'],
-              destino: mov['destino'] ?? 'N/A',
-              totalPecas: mov['total_pecas'],
-              usuario: mov['usuario'],
-              status: mov['status'],
-            ),
-          );
-        },
-      ),
-      floatingActionButton: Visibility(
-        visible: isFabVisible,
-        child: BotaoAdicionarMov(
+    return MediaQuery.removeViewInsets(
+      removeBottom: true,
+      context: context,
+      child: Scaffold(
+        backgroundColor: Color(0xFFf3f3f3),
+        appBar: CustomAppBar(
+          titleText: 'Histórico',
+          customHeight: 70,
+        ),
+        drawer: CustomDrawer(),
+        body: movimentacoes.isEmpty
+            ? Center(child: Text('Nenhuma movimentação encontrada'))
+            : ListView.builder(
+          padding: EdgeInsets.only(top: 16, bottom: 30),
+          itemCount: movimentacoes.length,
+          itemBuilder: (context, index) {
+            final mov = movimentacoes[index];
+            return Dismissible(
+              key: Key(mov['mov_sqlite'].toString()),
+              direction: DismissDirection.endToStart,
+              confirmDismiss: (direction) async {
+                if (direction == DismissDirection.endToStart) {
+                  return await _confirmDismiss(context, mov);
+                }
+                return false;
+              },
+              onDismissed: (direction) {
+                if (direction == DismissDirection.endToStart) {
+                  _deletarMovimentacao(mov['mov_sqlite']);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Movimentação ${mov['mov_sqlite']} deletada')),
+                  );
+                }
+              },
+              background: Container(
+                color: Theme.of(context).colorScheme.primary,
+                alignment: Alignment.centerRight,
+                padding: EdgeInsets.symmetric(horizontal: 20.0),
+                child: Icon(Icons.delete, color: Colors.white),
+              ),
+              child: Movimentacao(
+                id: mov['mov_sqlite'],
+                data: DateTime.parse(mov['data']),
+                origem: mov['origem'],
+                destino: mov['destino'] ?? 'N/A',
+                totalPecas: mov['total_pecas'],
+                usuario: mov['usuario'],
+                status: mov['status'],
+              ),
+            );
+          },
+        ),
+        floatingActionButton: BotaoAdicionarMov(
           onPressed: () {
             Navigator.pushNamed(context, '/nova_mov');
           },
           heroTag: 'uniqueEncerrarButtonForNovaMov',  // Hero tag único para evitar conflitos
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

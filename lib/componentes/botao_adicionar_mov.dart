@@ -8,23 +8,18 @@ class BotaoAdicionarMov extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 55,
-      height: 55,
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
-        borderRadius: BorderRadius.circular(10),
+    return FloatingActionButton(
+      onPressed: onPressed,
+      backgroundColor: Theme.of(context).primaryColor, // Transparent to show the container's color
+      elevation: 5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(50.0),
       ),
-      child: FloatingActionButton(
-        onPressed: onPressed,
-        backgroundColor: Colors.transparent, // Transparent to show the container's color
-        elevation: 5,
-        heroTag: heroTag,  // Utiliza a tag hero única
-        child: Center(
-          child: Icon(
-            Icons.add,
-            color: Colors.white,
-          ),
+      heroTag: heroTag,  // Utiliza a tag hero única
+      child: Center(
+        child: Icon(
+          Icons.add,
+          color: Colors.white,
         ),
       ),
     );

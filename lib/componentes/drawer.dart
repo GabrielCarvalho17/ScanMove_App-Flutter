@@ -15,10 +15,10 @@ class CustomDrawer extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: <Widget>[
           Container(
-            height: 230.0, // Ajuste a altura conforme necessário
+            height: 200.0,
             child: DrawerHeader(
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
+                color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -51,12 +51,12 @@ class CustomDrawer extends StatelessWidget {
           ListTile(
             leading: Icon(
               Icons.add_circle,
-              color: Theme.of(context).iconTheme.color,
+              color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
             ),
             title: Text(
               'Movimentar',
               style: TextStyle(
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+                color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
               ),
             ),
             onTap: () {
@@ -66,12 +66,12 @@ class CustomDrawer extends StatelessWidget {
           ListTile(
             leading: Icon(
               Icons.history,
-              color: Theme.of(context).iconTheme.color,
+              color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
             ),
             title: Text(
               'Histórico',
               style: TextStyle(
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+                color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
               ),
             ),
             onTap: () {
@@ -81,12 +81,12 @@ class CustomDrawer extends StatelessWidget {
           ListTile(
             leading: Icon(
               Icons.exit_to_app,
-              color: Theme.of(context).iconTheme.color,
+              color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
             ),
             title: Text(
               'Sair',
               style: TextStyle(
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+                color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
               ),
             ),
             onTap: () async {

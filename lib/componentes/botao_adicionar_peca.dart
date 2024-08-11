@@ -17,43 +17,40 @@ class BotaoAdicionarPeca extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ProvOrigemDestino>(
       builder: (context, provOrigemDestino, child) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: FloatingActionButton(
-            onPressed: () async {
-              if (provOrigemDestino.origem.isEmpty) {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return DialogoErro(
-                      titulo: 'Atenção',
-                      mensagem: 'Por favor, preencha o campo de origem primeiro.',
-                    );
-                  },
-                );
-              } else {
-                Map<String, dynamic>? peca =
-                await _adicionarPeca(context, provOrigemDestino.origem);
-                if (peca != null) {
-                  onPecaAdicionada(peca);
-                  Provider.of<ProvPeca>(context, listen: false).setUltimaPeca(
-                      peca['localizacao'], peca['filial']);
-                }
+        return FloatingActionButton(
+          onPressed: () async {
+            if (provOrigemDestino.origem.isEmpty) {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return DialogoErro(
+                    titulo: 'Atenção',
+                    mensagem: 'Por favor, preencha o campo de origem primeiro.',
+                  );
+                },
+              );
+            } else {
+              Map<String, dynamic>? peca =
+              await _adicionarPeca(context, provOrigemDestino.origem);
+              if (peca != null) {
+                onPecaAdicionada(peca);
+                Provider.of<ProvPeca>(context, listen: false).setUltimaPeca(
+                    peca['localizacao'], peca['filial']);
               }
-            },
-            backgroundColor: Colors.transparent, // Transparent to show the container's color
-            elevation: 5,
-            heroTag: heroTag,  // Utiliza a tag hero única
-            child: Icon(
-              Icons.add,
-              size: 30.0,
-              color: Colors.white,
-            ),
-            tooltip: 'Adicionar Peça',
+            }
+          },
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(50.0),
           ),
+          backgroundColor: Theme.of(context).primaryColor, // Transparent to show the container's color
+          elevation: 5,
+          heroTag: heroTag,  // Utiliza a tag hero única
+          child: Icon(
+            Icons.add,
+            size: 30.0,
+            color: Colors.white,
+          ),
+          tooltip: 'Adicionar Peça',
         );
       },
     );
