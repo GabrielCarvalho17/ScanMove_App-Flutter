@@ -12,36 +12,34 @@ class MsgErro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 50, // Altura fixa para o espaço da mensagem
-      child: message.isNotEmpty
-          ? Container(
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(10.0),
+    if (message.isEmpty) {
+      return SizedBox.shrink();  // Retorna um widget invisível quando não há mensagem
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.red,
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(color: Colors.white),
               ),
-              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
-              child: Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        message,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    IconButton(
-                      padding: const EdgeInsets.all(0),
-                      icon: const Icon(Icons.close,
-                          color: Colors.white, size: 20),
-                      onPressed: onClose,
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : null,
+            ),
+            IconButton(
+              padding: const EdgeInsets.all(0),
+              icon: const Icon(Icons.close, color: Colors.white, size: 20),
+              onPressed: onClose,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

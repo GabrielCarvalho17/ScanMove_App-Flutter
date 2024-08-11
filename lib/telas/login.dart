@@ -38,7 +38,7 @@ class LoginState extends State<Login> {
     }
 
     setState(() {
-      _isLoading = true;  // Começa o carregamento com atraso
+      _isLoading = true;
     });
 
     Timer(const Duration(milliseconds: 500), () async {
@@ -55,7 +55,7 @@ class LoginState extends State<Login> {
         Navigator.of(context).pushReplacementNamed('/hist_mov');
       } catch (e) {
         setState(() {
-          _mensagemErro = 'Usuário ou senha incorretos';
+          _mensagemErro = e.toString().replaceAll('Exception: ', '');  // Remove qualquer ocorrência de "Exception: "
         });
       } finally {
         setState(() {

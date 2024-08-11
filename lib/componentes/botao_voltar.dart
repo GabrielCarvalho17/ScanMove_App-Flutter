@@ -70,36 +70,40 @@ class BotaoVoltar extends StatelessWidget {
     } else if (provOrigemDestino.origem.isEmpty || pecas.isEmpty) {
       limparEIrParaHistorico();
     } else if (status == 'Andamento') {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return DialogoErro(
-            titulo: 'Atenção!',
-            mensagem: 'Deseja finalizar a movimentação ou apenas sair?',
-            alturaMinimaTexto: 40,
-            textoBotao1: 'Sair',
-            onBotao1Pressed: () {
-              Navigator.of(context).pop();
-              limparEIrParaHistorico();
-            },
-            textoBotao2: 'Finalizar',
-            onBotao2Pressed: () async {
-              await _finalizarMovimentacao(context);
-              Navigator.of(context).pop();
-              limparEIrParaHistorico();
-            },
-          );
-        },
-      );
+      if (provOrigemDestino.destino.isEmpty) {
+        limparEIrParaHistorico();
+      } else {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return DialogoErro(
+              titulo: 'Atenção!',
+              mensagem: 'Deseja finalizar a movimentação ou apenas sair?',
+              alturaMinimaTexto: 40,
+              textoBotao1: 'Sair',
+              onBotao1Pressed: () {
+                Navigator.of(context).pop();
+                limparEIrParaHistorico();
+              },
+              textoBotao2: 'Finalizar',
+              onBotao2Pressed: () async {
+                await _finalizarMovimentacao(context);
+                Navigator.of(context).pop();
+                limparEIrParaHistorico();
+              },
+            );
+          },
+        );
+      }
     } else {
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return DialogoErro(
             titulo: 'Atenção!',
-            mensagem: 'Deseja cancelar a movimentação ou salvar?',
+            mensagem: 'Deseja iniciar uma nova movimentação ou apenas sair?',
             alturaMinimaTexto: 40,
-            textoBotao1: 'Cancelar',
+            textoBotao1: 'Sair',
             onBotao1Pressed: () {
               Navigator.of(context).pop();
               limparEIrParaHistorico();

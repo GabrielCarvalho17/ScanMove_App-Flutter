@@ -123,7 +123,7 @@ class _NovaMovState extends State<NovaMov> {
         ),
         drawer: CustomDrawer(),
         body: ListView.builder(
-          padding: const EdgeInsets.only(top: 16.0, bottom: 30),
+          padding: const EdgeInsets.only(top: 16.0, bottom: 80),
           itemCount: pecas.length,
           itemBuilder: (context, index) {
             final peca = pecas[index];

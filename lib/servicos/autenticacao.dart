@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:async';
 import 'package:AppEstoqueMP/modelos/autenticacao.dart';
 import 'package:AppEstoqueMP/servicos/config.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ServAutenticacao {
@@ -14,7 +14,7 @@ class ServAutenticacao {
       final response = await http.post(
         Uri.parse('${Config.baseUrl}/token/'),
         headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
+          'Content-Type': 'application/json; charset=UTF-8', // Garante que o charset seja UTF-8
         },
         body: jsonEncode(<String, String>{
           'username': username,
@@ -23,7 +23,7 @@ class ServAutenticacao {
       ).timeout(Duration(seconds: 15)); // Definindo timeout
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
+        final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
 
         final List<Map<String, dynamic>> users = await _dbHelper.obterUsuarios();
 
@@ -43,10 +43,17 @@ class ServAutenticacao {
 
         return Autenticacao.fromJson(data);
       } else {
-        throw Exception('Falha ao fazer login: ${response.body}');
+        final Map<String, dynamic> errorData = jsonDecode(utf8.decode(response.bodyBytes));
+        final errorMessage = errorData['detail'] ?? 'Usuário e/ou senha incorretos';
+        throw Exception(errorMessage);
       }
+    } on TimeoutException {
+      throw Exception('O servidor não está respondendo. Tente novamente mais tarde.');
+    } on http.ClientException {
+      throw Exception('Não foi possível conectar ao servidor. Verifique sua conexão com a internet ou tente novamente mais tarde.');
     } catch (e) {
-      throw Exception('Falha ao fazer login: $e');
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      throw Exception(errorMessage);
     }
   }
 
@@ -65,12 +72,13 @@ class ServAutenticacao {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
+        final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
         await _dbHelper.atualizarUsuario(users.first['id'], {
           'access_token': data['access'],
         });
       } else {
-        throw Exception('Falha ao atualizar token');
+        final Map<String, dynamic> errorData = jsonDecode(utf8.decode(response.bodyBytes));
+        throw Exception(errorData['detail'] ?? 'Falha ao atualizar token');
       }
     }
   }

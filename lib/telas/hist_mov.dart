@@ -90,7 +90,7 @@ class _HistMovState extends State<HistMov> {
         body: movimentacoes.isEmpty
             ? Center(child: Text('Nenhuma movimentação encontrada'))
             : ListView.builder(
-          padding: EdgeInsets.only(top: 16, bottom: 30),
+          padding: EdgeInsets.only(top: 16, bottom: 80),
           itemCount: movimentacoes.length,
           itemBuilder: (context, index) {
             final mov = movimentacoes[index];
