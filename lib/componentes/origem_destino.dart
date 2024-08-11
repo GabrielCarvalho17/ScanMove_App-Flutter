@@ -101,6 +101,9 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
     if (result.type == ResultType.Barcode) {
       String rawContent = result.rawContent;
 
+      // Armazena o valor anterior válido
+      String valorAnterior = controller.text;
+
       try {
         var localizacao = await _servLocalizacao.fetchLocalizacao(context, rawContent);
         print("Localização obtida: ${localizacao.localizacao}, Filial: ${localizacao.filial}");
@@ -110,6 +113,7 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
 
         bool validacaoFalhou = false;
 
+        // Validação 1: Origem versus última localização da peça
         if (campo == 'Origem' && provPeca.ultimaLocalizacao.isNotEmpty && provPeca.ultimaLocalizacao != localizacao.localizacao) {
           validacaoFalhou = true;
           showDialog(
@@ -123,6 +127,7 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
           );
         }
 
+        // Validação 2: Origem e destino não podem ser iguais
         if (campo == 'Origem' && provOrigemDestino.destino.isNotEmpty && rawContent == provOrigemDestino.destino) {
           validacaoFalhou = true;
           showDialog(
@@ -134,10 +139,26 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
               );
             },
           );
+        } else if (campo == 'Destino' && provOrigemDestino.origem.isNotEmpty && rawContent == provOrigemDestino.origem) {
+          validacaoFalhou = true;
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return DialogoErro(
+                titulo: 'Erro',
+                mensagem: 'Destino não pode ser igual à origem!',
+              );
+            },
+          );
         }
 
-        if (validacaoFalhou) return;
+        if (validacaoFalhou) {
+          // Restaurar valor válido anterior
+          controller.text = valorAnterior;
+          return;
+        }
 
+        // Se todas as validações passarem, atualiza o TextEditingController e o provedor
         setState(() {
           controller.text = rawContent;
         });
@@ -153,6 +174,9 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
         });
 
       } catch (e) {
+        // Restaurar valor válido anterior
+        controller.text = valorAnterior;
+
         String errorMessage = e.toString().replaceFirst('Exception: ', '');
         showDialog(
           context: context,
@@ -163,15 +187,6 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
             );
           },
         );
-
-        setState(() {
-          controller.clear();
-          if (campo == 'Origem') {
-            context.read<ProvOrigemDestino>().setOrigem('');
-          } else {
-            context.read<ProvOrigemDestino>().setDestino('');
-          }
-        });
       }
     }
   }
@@ -192,11 +207,9 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
       );
       setState(() {
         if (campo == 'Destino') {
-          destinoController.clear();
-          context.read<ProvOrigemDestino>().setDestino('');
+          destinoController.text = ''; // Restaurar para vazio se for inválido
         } else if (campo == 'Origem') {
-          origemController.clear();
-          context.read<ProvOrigemDestino>().setOrigem('');
+          origemController.text = ''; // Restaurar para vazio se for inválido
         }
       });
     }
