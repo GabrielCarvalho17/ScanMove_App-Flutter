@@ -8,7 +8,7 @@ import 'package:AppEstoqueMP/provedores/peca.dart';
 
 class FormOrigemDestino extends StatefulWidget implements PreferredSizeWidget {
   final Map<String, String>? dados;
-  final bool isReadOnly; // Novo parâmetro
+  final bool isReadOnly;
 
   const FormOrigemDestino({Key? key, this.dados, this.isReadOnly = false}) : super(key: key);
 
@@ -30,7 +30,6 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
     origemController = TextEditingController();
     destinoController = TextEditingController();
 
-    // Inicializar os controladores com os dados recebidos
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _atualizarControladoresEProvedor();
     });
@@ -54,7 +53,7 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
       final provPeca = Provider.of<ProvPeca>(context, listen: false);
       if (provOrigemDestino.origem != origemController.text) {
         if (provPeca.ultimaLocalizacao.isNotEmpty && provPeca.ultimaLocalizacao != origemController.text) {
-          origemController.text = provOrigemDestino.origem; // Reset to previous value
+          origemController.text = provOrigemDestino.origem;
           showDialog(
             context: context,
             builder: (BuildContext context) {
@@ -94,9 +93,8 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
     super.dispose();
   }
 
-
   Future<void> insereLocalizacao(TextEditingController controller, String campo) async {
-    if (widget.isReadOnly) return; // Impedir a inserção de localização se estiver em modo somente leitura
+    if (widget.isReadOnly) return;
 
     var result = await BarcodeScanner.scan();
 
@@ -104,17 +102,14 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
       String rawContent = result.rawContent;
 
       try {
-        // Tenta buscar a localização antes de atualizar o campo
-        var localizacao = await _servLocalizacao.fetchLocalizacao(rawContent);
+        var localizacao = await _servLocalizacao.fetchLocalizacao(context, rawContent);
         print("Localização obtida: ${localizacao.localizacao}, Filial: ${localizacao.filial}");
 
-        // Validação de origem versus última localização da peça
         final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
         final provPeca = Provider.of<ProvPeca>(context, listen: false);
 
         bool validacaoFalhou = false;
 
-        // Validação 1: Origem versus última localização da peça
         if (campo == 'Origem' && provPeca.ultimaLocalizacao.isNotEmpty && provPeca.ultimaLocalizacao != localizacao.localizacao) {
           validacaoFalhou = true;
           showDialog(
@@ -128,7 +123,6 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
           );
         }
 
-        // Validação 2: Origem e destino não podem ser iguais
         if (campo == 'Origem' && provOrigemDestino.destino.isNotEmpty && rawContent == provOrigemDestino.destino) {
           validacaoFalhou = true;
           showDialog(
@@ -142,13 +136,10 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
           );
         }
 
-        if (validacaoFalhou) {
-          return; // Se qualquer validação falhar, interrompe a execução
-        }
+        if (validacaoFalhou) return;
 
-        // Se todas as validações passarem, atualiza o TextEditingController e o provedor
         setState(() {
-          controller.text = rawContent; // Atualiza o campo só se a localização for válida
+          controller.text = rawContent;
         });
 
         if (campo == 'Origem') {
@@ -162,13 +153,7 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
         });
 
       } catch (e) {
-        // Se a localização não for encontrada ou outro erro ocorrer, exiba a mensagem de erro
-        String errorMessage;
-        if (e is LocalizacaoNotFoundException) {
-          errorMessage = 'Localização não encontrada.';
-        } else {
-          errorMessage = 'Erro ao buscar localização: $e';
-        }
+        String errorMessage = e.toString().replaceFirst('Exception: ', '');
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -179,25 +164,21 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
           },
         );
 
-        // Não atualiza o controller nem o provedor, mantendo o estado anterior
         setState(() {
-          controller.clear(); // Limpa o campo em caso de erro
+          controller.clear();
           if (campo == 'Origem') {
-            context.read<ProvOrigemDestino>().setOrigem(''); // Mantém o estado anterior
+            context.read<ProvOrigemDestino>().setOrigem('');
           } else {
-            context.read<ProvOrigemDestino>().setDestino(''); // Mantém o estado anterior
+            context.read<ProvOrigemDestino>().setDestino('');
           }
         });
       }
     }
   }
 
-
   void verificarOrigemDestino(String campo) {
     String origem = context.read<ProvOrigemDestino>().origem;
     String destino = context.read<ProvOrigemDestino>().destino;
-
-    print("Verificando: origem = $origem, destino = $destino");
 
     if (origem.isNotEmpty && destino.isNotEmpty && origem == destino) {
       showDialog(
@@ -255,7 +236,7 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
                           ),
                         ),
                         style: TextStyle(color: Colors.white),
-                        onTap: widget.isReadOnly ? null : () => insereLocalizacao(origemController, 'Origem'), // Desabilitar se somente leitura
+                        onTap: widget.isReadOnly ? null : () => insereLocalizacao(origemController, 'Origem'),
                       ),
                     ),
                     Padding(
