@@ -40,7 +40,7 @@ class CustomDrawer extends StatelessWidget {
                     ),
                     // Adicione o email ou deixe vazio
                     Text(
-                      '',
+                      '', // Se desejar adicionar um e-mail ou outro campo, modifique aqui
                       style: TextStyle(color: Colors.white),
                     ),
                   ],
@@ -60,7 +60,13 @@ class CustomDrawer extends StatelessWidget {
               ),
             ),
             onTap: () {
-              Navigator.of(context).pushReplacementNamed('/nova_mov', arguments: provUsuario.username);
+              Navigator.of(context).pushReplacementNamed(
+                '/nova_mov',
+                arguments: {
+                  'id': null, // Passa `null` se estiver iniciando uma nova movimentação
+                  'status': 'ativo', // Define o status como "ativo"
+                },
+              );
             },
           ),
           ListTile(
@@ -75,7 +81,13 @@ class CustomDrawer extends StatelessWidget {
               ),
             ),
             onTap: () {
-              Navigator.of(context).pushReplacementNamed('/hist_mov', arguments: provUsuario.username);
+              Navigator.of(context).pushReplacementNamed(
+                '/hist_mov',
+                arguments: {
+                  'id': provUsuario.username, // Passa o username como parte do mapa
+                  'status': 'finalizado', // Adiciona um status ou outro argumento relevante
+                },
+              );
             },
           ),
           ListTile(
