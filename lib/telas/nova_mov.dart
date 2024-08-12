@@ -42,10 +42,12 @@ class _NovaMovState extends State<NovaMov> {
   }
 
   Future<void> _carregarMovimentacao(int id) async {
-    final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
+    final provOrigemDestino =
+    Provider.of<ProvOrigemDestino>(context, listen: false);
     final provPeca = Provider.of<ProvPeca>(context, listen: false);
     final movimentacao = await _dbHelper.obterMovimentoPorId(id);
-    final itens = await _dbHelper.obterItensPorMovimento(id, movimentacao['mov_servidor']);
+    final itens = await _dbHelper.obterItensPorMovimento(
+        id, movimentacao['mov_servidor']);
 
     if (movimentacao.isNotEmpty) {
       dadosMovimentacao = {
@@ -55,8 +57,13 @@ class _NovaMovState extends State<NovaMov> {
         'filial_destino': movimentacao['filial_destino'] ?? '',
       };
 
-      provOrigemDestino.setOrigem(movimentacao['origem'], filial: movimentacao['filial_origem']);
-      provOrigemDestino.setDestino(movimentacao['destino'], filial: movimentacao['filial_destino']);
+      provOrigemDestino.setOrigem(movimentacao['origem'],
+          filial: movimentacao['filial_origem']);
+      provOrigemDestino.setDestino(movimentacao['destino'],
+          filial: movimentacao['filial_destino']);
+
+      // Inicializa o contador de peças com o total de itens
+      provPeca.inicializarContadorPeca(itens.length);
 
       if (itens.isNotEmpty) {
         final ultimaPeca = itens.last;
@@ -67,7 +74,8 @@ class _NovaMovState extends State<NovaMov> {
     }
 
     setState(() {
-      pecas = itens.map((item) => {
+      pecas = itens
+          .map((item) => {
         'peca': item['peca'],
         'partida': item['partida'],
         'material': item['material'],
@@ -75,10 +83,13 @@ class _NovaMovState extends State<NovaMov> {
         'cor': item['cor_material'],
         'descCor': item['desc_cor_material'],
         'unidade': item['unidade'],
-        'qtde': (item['quantidade'] is int) ? item['quantidade'].toDouble() : item['quantidade'],
+        'qtde': (item['quantidade'] is int)
+            ? item['quantidade'].toDouble()
+            : item['quantidade'],
         'filial': item['filial'],
         'localizacao': item['localizacao'],
-      }).toList();
+      })
+          .toList();
     });
   }
 
@@ -95,7 +106,8 @@ class _NovaMovState extends State<NovaMov> {
       setState(() {
         pecas.add(peca);
       });
-      Provider.of<ProvPeca>(context, listen: false).setUltimaPeca(peca['localizacao'], peca['filial']);
+      Provider.of<ProvPeca>(context, listen: false)
+          .setUltimaPeca(peca['localizacao'], peca['filial']);
     }
   }
 
@@ -122,33 +134,39 @@ class _NovaMovState extends State<NovaMov> {
           ),
         ),
         drawer: CustomDrawer(),
-        body: ListView.builder(
-          padding: const EdgeInsets.only(top: 16.0, bottom: 80),
-          itemCount: pecas.length,
-          itemBuilder: (context, index) {
-            final peca = pecas[index];
-            return Dismissible(
-              key: Key(peca['peca']),
-              direction: DismissDirection.endToStart,
-              onDismissed: (direction) => removerPeca(index),
-              background: Container(
-                color: Theme.of(context).primaryColor,
-                alignment: Alignment.centerRight,
-                padding: EdgeInsets.symmetric(horizontal: 20.0),
-                child: Icon(Icons.delete, color: Colors.white),
+        body: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.only(top: 16.0, bottom: 80),
+                itemCount: pecas.length,
+                itemBuilder: (context, index) {
+                  final peca = pecas[index];
+                  return Dismissible(
+                    key: Key(peca['peca']),
+                    direction: DismissDirection.endToStart,
+                    onDismissed: (direction) => removerPeca(index),
+                    background: Container(
+                      color: Theme.of(context).primaryColor,
+                      alignment: Alignment.centerRight,
+                      padding: EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Icon(Icons.delete, color: Colors.white),
+                    ),
+                    child: Peca(
+                      peca: peca['peca'],
+                      partida: peca['partida'],
+                      material: peca['material'],
+                      descMaterial: peca['descMaterial'] ?? '',
+                      cor: peca['cor'] ?? '',
+                      descCor: peca['descCor'] ?? '',
+                      unidade: peca['unidade'] ?? '',
+                      qtde: peca['qtde'] ?? 0.0,
+                    ),
+                  );
+                },
               ),
-              child: Peca(
-                peca: peca['peca'],
-                partida: peca['partida'],
-                material: peca['material'],
-                descMaterial: peca['descMaterial'] ?? '',
-                cor: peca['cor'] ?? '',
-                descCor: peca['descCor'] ?? '',
-                unidade: peca['unidade'] ?? '',
-                qtde: peca['qtde'] ?? 0.0,
-              ),
-            );
-          },
+            ),
+          ],
         ),
         floatingActionButton: Padding(
           padding: const EdgeInsets.only(left: 32, right: 16),

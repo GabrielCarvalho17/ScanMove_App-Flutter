@@ -16,7 +16,7 @@ class FormOrigemDestino extends StatefulWidget implements PreferredSizeWidget {
   _FormOrigemDestinoState createState() => _FormOrigemDestinoState();
 
   @override
-  Size get preferredSize => Size.fromHeight(80.0);
+  Size get preferredSize => Size.fromHeight(125.0);
 }
 
 class _FormOrigemDestinoState extends State<FormOrigemDestino> {
@@ -169,10 +169,6 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
           provOrigemDestino.setDestino(rawContent, filial: localizacao.filial);
         }
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          verificarOrigemDestino(campo);
-        });
-
       } catch (e) {
         // Restaurar valor válido anterior
         controller.text = valorAnterior;
@@ -197,34 +193,10 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
     }
   }
 
-  void verificarOrigemDestino(String campo) {
-    String origem = context.read<ProvOrigemDestino>().origem;
-    String destino = context.read<ProvOrigemDestino>().destino;
-
-    if (origem.isNotEmpty && destino.isNotEmpty && origem == destino) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return DialogoErro(
-            titulo: 'Erro',
-            mensagem: 'Origem e destino não podem ser iguais!',
-          );
-        },
-      );
-      setState(() {
-        if (campo == 'Destino') {
-          destinoController.text = ''; // Restaurar para vazio se for inválido
-        } else if (campo == 'Origem') {
-          origemController.text = ''; // Restaurar para vazio se for inválido
-        }
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProvOrigemDestino>(
-      builder: (context, provOrigemDestino, child) {
+    return Consumer2<ProvOrigemDestino, ProvPeca>(
+      builder: (context, provOrigemDestino, provPeca, child) {
         return Container(
           color: Theme.of(context).primaryColor,
           child: Padding(
@@ -304,6 +276,16 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
                     ),
                   ],
                 ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 15.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Total de Peças', style: TextStyle(color: Colors.white, fontSize: 17)),
+                      Text('${provPeca.contadorPecas}', style: TextStyle(color: Colors.white, fontSize: 17)),
+                    ],
+                  ),
+                )
               ],
             ),
           ),

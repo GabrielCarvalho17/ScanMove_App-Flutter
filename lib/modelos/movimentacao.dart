@@ -1,55 +1,61 @@
-class MovimentacaoItem {
+class ItemMovimentacao {
   final String peca;
   final String partida;
   final String material;
+  final String descMaterial;
   final String corMaterial;
+  final String descCorMaterial;
   final String unidade;
   final double quantidade;
+  final int movSqlite; // Campo para gerenciamento interno no app
 
-  MovimentacaoItem({
+  ItemMovimentacao({
     required this.peca,
     required this.partida,
     required this.material,
+    required this.descMaterial,
     required this.corMaterial,
+    required this.descCorMaterial,
     required this.unidade,
     required this.quantidade,
+    required this.movSqlite, // Inicializa o campo movSqlite
   });
 
-  factory MovimentacaoItem.fromJson(Map<String, dynamic> json) {
-    return MovimentacaoItem(
-      peca: json['peca'],
-      partida: json['partida'],
-      material: json['material'],
-      corMaterial: json['cor_material'],
-      unidade: json['unidade'],
-      quantidade: (json['quantidade'] as num).toDouble(),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
+  // Método toJson com parâmetro opcional para incluir movSqlite
+  Map<String, dynamic> toJson({bool includeMovSqlite = false}) {
+    final Map<String, dynamic> json = {
       'peca': peca,
       'partida': partida,
       'material': material,
+      'desc_material': descMaterial,
       'cor_material': corMaterial,
+      'desc_cor_material': descCorMaterial,
       'unidade': unidade,
       'quantidade': quantidade,
     };
+
+    if (includeMovSqlite) {
+      json['mov_sqlite'] = movSqlite;
+    }
+
+    return json;
   }
 }
 
 class Movimentacao {
-  final int movimentacao;
-  final DateTime data;
+  final String dataInicio;
+  final String dataModificacao;
+  final String status;
   final String usuario;
   final String origem;
   final String destino;
   final int totalPecas;
-  final List<MovimentacaoItem> itens;
+  final List<ItemMovimentacao> itens;
 
   Movimentacao({
-    required this.movimentacao,
-    required this.data,
+    required this.dataInicio,
+    required this.dataModificacao,
+    required this.status,
     required this.usuario,
     required this.origem,
     required this.destino,
@@ -57,24 +63,12 @@ class Movimentacao {
     required this.itens,
   });
 
-  factory Movimentacao.fromJson(Map<String, dynamic> json) {
-    return Movimentacao(
-      movimentacao: json['movimentacao'],
-      data: DateTime.parse(json['data']),
-      usuario: json['usuario'],
-      origem: json['origem'],
-      destino: json['destino'],
-      totalPecas: json['total_pecas'],
-      itens: (json['itens'] as List)
-          .map((item) => MovimentacaoItem.fromJson(item))
-          .toList(),
-    );
-  }
-
+  // Método toJson para converter Movimentacao e seus itens em JSON
   Map<String, dynamic> toJson() {
     return {
-      'movimentacao': movimentacao,
-      'data': data.toIso8601String(),
+      'data_inicio': dataInicio,
+      'data_modificacao': dataModificacao,
+      'status': status,
       'usuario': usuario,
       'origem': origem,
       'destino': destino,

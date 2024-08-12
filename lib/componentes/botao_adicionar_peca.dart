@@ -34,8 +34,11 @@ class BotaoAdicionarPeca extends StatelessWidget {
                 final peca = await _adicionarPeca(context, provOrigemDestino.origem);
                 if (peca != null) {
                   onPecaAdicionada(peca);
+
+                  // Atualiza a última peça e incrementa o contador
                   Provider.of<ProvPeca>(context, listen: false).setUltimaPeca(
                       peca['localizacao'], peca['filial']);
+                  Provider.of<ProvPeca>(context, listen: false).setContadorPeca(); // Incrementa o contador
                 }
               } catch (e) {
                 String mensagemErro;

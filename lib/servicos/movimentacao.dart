@@ -1,52 +1,45 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:AppEstoqueMP/modelos/movimentacao.dart'; // Importar o arquivo com os modelos
+import 'package:AppEstoqueMP/modelos/movimentacao.dart';
+import 'package:AppEstoqueMP/servicos/config.dart';
+import 'package:AppEstoqueMP/servicos/sqlite.dart';
 
-class MovimentacaoService {
-  final String apiUrl = "https://sua-api.com/api/movimentacoes/";
+class ServMovimentacao {
+  final SQLite _dbHelper = SQLite();
 
-  Future<List<Movimentacao>> fetchMovimentacoes() async {
-    final response = await http.get(Uri.parse(apiUrl));
+  Future<void> enviarMovimentacao(Movimentacao movimentacao) async {
+    final url = '${Config.baseUrl}/materiais/movimentacoes/';
 
-    if (response.statusCode == 200) {
-      List jsonResponse = json.decode(response.body);
-      return jsonResponse.map((data) => Movimentacao.fromJson(data)).toList();
-    } else {
-      throw Exception('Falha ao carregar as movimentações');
+    // Converte a movimentacao para JSON sem incluir 'movSqlite'
+    final Map<String, dynamic> body = movimentacao.toJson();
+
+    try {
+      // Envia a movimentação ao servidor
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body);
+        final int movServidorId = data['id_sqlite'];
+        print('Movimentação enviada com sucesso! ID do servidor: $movServidorId');
+
+        // Atualiza o SQLite com o ID do servidor para cada item da movimentação
+        for (final item in movimentacao.itens) {
+          await _dbHelper.atualizarItem(item.movSqlite, {
+            'mov_servidor': movServidorId,
+          });
+        }
+      } else {
+        throw Exception('Erro ao enviar movimentação: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Erro ao enviar movimentação: $e');
+      throw e;
     }
-  }
-
-  Future<Movimentacao> fetchMovimentacao(int id) async {
-    final response = await http.get(Uri.parse("$apiUrl$id/"));
-
-    if (response.statusCode == 200) {
-      return Movimentacao.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Falha ao carregar a movimentação');
-    }
-  }
-
-  Future<http.Response> createMovimentacao(Movimentacao movimentacao) async {
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(movimentacao.toJson()),
-    );
-    return response;
-  }
-
-  Future<http.Response> updateMovimentacao(
-      int id, Movimentacao movimentacao) async {
-    final response = await http.put(
-      Uri.parse("$apiUrl$id/"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(movimentacao.toJson()),
-    );
-    return response;
-  }
-
-  Future<http.Response> deleteMovimentacao(int id) async {
-    final response = await http.delete(Uri.parse("$apiUrl$id/"));
-    return response;
   }
 }

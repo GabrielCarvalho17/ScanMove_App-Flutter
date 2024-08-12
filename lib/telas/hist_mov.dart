@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
 import 'package:AppEstoqueMP/componentes/movimentacao.dart';
 import 'package:AppEstoqueMP/componentes/drawer.dart';
 import 'package:AppEstoqueMP/componentes/app_bar.dart';
 import 'package:AppEstoqueMP/componentes/botao_adicionar_mov.dart';
+import 'package:AppEstoqueMP/componentes/botao_sincronizar.dart';
+import 'package:AppEstoqueMP/componentes/botao_rolar_topo.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';  // Importar o dialogo
+import 'package:AppEstoqueMP/provedores/peca.dart';
 
 class HistMov extends StatefulWidget {
   @override
@@ -13,11 +17,25 @@ class HistMov extends StatefulWidget {
 
 class _HistMovState extends State<HistMov> {
   List<Map<String, dynamic>> movimentacoes = [];
+  late ScrollController _scrollController;
+  bool _showScrollToTopButton = false;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController()
+      ..addListener(() {
+        setState(() {
+          _showScrollToTopButton = _scrollController.offset > 200; // Ajuste o valor conforme necessário
+        });
+      });
     _carregarMovimentacoes();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _carregarMovimentacoes() async {
@@ -90,6 +108,7 @@ class _HistMovState extends State<HistMov> {
         body: movimentacoes.isEmpty
             ? Center(child: Text('Nenhuma movimentação encontrada'))
             : ListView.builder(
+          controller: _scrollController,
           padding: EdgeInsets.only(top: 16, bottom: 80),
           itemCount: movimentacoes.length,
           itemBuilder: (context, index) {
@@ -129,13 +148,53 @@ class _HistMovState extends State<HistMov> {
             );
           },
         ),
-        floatingActionButton: BotaoAdicionarMov(
-          onPressed: () {
-            Navigator.pushNamed(context, '/nova_mov');
-          },
-          heroTag: 'uniqueEncerrarButtonForNovaMov',  // Hero tag único para evitar conflitos
+        floatingActionButton: Stack(
+          children: [
+            // Botão para rolar para o topo (visível apenas quando necessário)
+            if (_showScrollToTopButton)
+              Positioned(
+                left: 20,
+                bottom: 0,
+                child: BotaoRolarTopo(
+                  onPressed: () {
+                    _scrollController.animateTo(
+                      0,
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  heroTag: 'uniqueScrollTopButton',
+                ),
+              ),
+            // Botão de sincronizar (visível no centro)
+            Positioned(
+              left: MediaQuery.of(context).size.width / 2 - 28,
+              bottom: 0,
+              child: BotaoSincronizar(
+                onPressed: () {
+                  // Implementar a lógica de sincronização aqui
+                  print('Sincronizar!');
+                },
+                heroTag: 'uniqueSyncButton',
+              ),
+            ),
+            // Botão de adicionar movimentação (visível sempre à direita)
+            Positioned(
+              right: 20,
+              bottom: 0,
+              child: BotaoAdicionarMov(
+                onPressed: () {
+                  // Zerar o contador de peças antes de navegar para a tela de nova movimentação
+                  Provider.of<ProvPeca>(context, listen: false).inicializarContadorPeca(0);
+
+                  Navigator.pushNamed(context, '/nova_mov');
+                },
+                heroTag: 'uniqueAddMovButton',
+              ),
+            ),
+          ],
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
   }
