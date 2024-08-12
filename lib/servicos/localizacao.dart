@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:AppEstoqueMP/modelos/localizacao.dart';
 import 'package:AppEstoqueMP/servicos/config.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
-import 'package:AppEstoqueMP/servicos/autenticacao.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 
 class LocalizacaoNotFoundException implements Exception {
@@ -15,7 +14,6 @@ class LocalizacaoNotFoundException implements Exception {
 
 class ServLocalizacao {
   final SQLite _dbHelper = SQLite();
-  final ServAutenticacao _servAutenticacao = ServAutenticacao();
 
   Future<Localizacao> fetchLocalizacao(BuildContext context, String localizacao) async {
     const tempoMinimoParaLoading = Duration(seconds: 1);

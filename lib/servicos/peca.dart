@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:AppEstoqueMP/modelos/peca.dart';
 import 'package:AppEstoqueMP/servicos/config.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
-import 'package:AppEstoqueMP/servicos/autenticacao.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 
 class PecaNotFoundException implements Exception {
@@ -15,7 +14,6 @@ class PecaNotFoundException implements Exception {
 
 class ServPeca {
   final SQLite _dbHelper = SQLite();
-  final ServAutenticacao _servAutenticacao = ServAutenticacao();
 
   Future<PecaModel> fetchPeca(BuildContext context, String peca) async {
     const tempoMinimoParaLoading = Duration(seconds: 1);
