@@ -177,7 +177,13 @@ class _FormOrigemDestinoState extends State<FormOrigemDestino> {
         // Restaurar valor válido anterior
         controller.text = valorAnterior;
 
-        String errorMessage = e.toString().replaceFirst('Exception: ', '');
+        String errorMessage;
+        if (e is LocalizacaoNotFoundException) {
+          errorMessage = e.message;
+        } else {
+          errorMessage = e.toString().replaceFirst('Exception: ', '');
+        }
+
         showDialog(
           context: context,
           builder: (BuildContext context) {

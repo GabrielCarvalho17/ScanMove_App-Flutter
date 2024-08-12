@@ -18,11 +18,9 @@ class ServLocalizacao {
   final ServAutenticacao _servAutenticacao = ServAutenticacao();
 
   Future<Localizacao> fetchLocalizacao(BuildContext context, String localizacao) async {
-    // Tempo mínimo para exibir o loading
     const tempoMinimoParaLoading = Duration(seconds: 1);
     bool loadingExibido = false;
 
-    // Future para exibir o loading após o tempo mínimo
     final Future<void> loadingFuture = Future.delayed(tempoMinimoParaLoading, () {
       loadingExibido = true;
       showDialog(
@@ -58,12 +56,10 @@ class ServLocalizacao {
     } on http.ClientException {
       throw Exception('Não foi possível conectar ao servidor. Verifique sua conexão com a internet ou tente novamente mais tarde.');
     } catch (e) {
-      throw Exception(_formatErrorMessage(e.toString()));
+      throw e; // Deixe a exceção ser tratada na parte que faz a chamada
     } finally {
-      // Espera o loadingFuture para garantir que o dialog não foi exibido após o tempo mínimo
       await loadingFuture;
 
-      // Fechar o diálogo de loading apenas se ele foi exibido
       if (loadingExibido && Navigator.canPop(context)) {
         Navigator.of(context).pop();
       }
@@ -85,9 +81,5 @@ class ServLocalizacao {
         'Authorization': 'Bearer $token',
       },
     ).timeout(Duration(seconds: 15));
-  }
-
-  String _formatErrorMessage(String errorMessage) {
-    return errorMessage.replaceAll('Exception: ', '').replaceAll('Exception:', '');
   }
 }
