@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:AppEstoqueMP/componentes/botao_encerrar.dart';
 import 'package:AppEstoqueMP/componentes/drawer.dart';
 import 'package:AppEstoqueMP/componentes/app_bar.dart';
 import 'package:AppEstoqueMP/componentes/origem_destino.dart';
 import 'package:AppEstoqueMP/componentes/peca.dart';
-import 'package:AppEstoqueMP/componentes/botao_adicionar_peca.dart';
-import 'package:AppEstoqueMP/componentes/botao_encerrar.dart';
-import 'package:AppEstoqueMP/provedores/origem_destino.dart';
 import 'package:AppEstoqueMP/componentes/botao_voltar.dart';
+import 'package:AppEstoqueMP/componentes/botao_rolar_topo.dart';
+import 'package:AppEstoqueMP/componentes/botao_adicionar_peca.dart';
+import 'package:AppEstoqueMP/provedores/origem_destino.dart';
 import 'package:AppEstoqueMP/provedores/peca.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
 
 class NovaMov extends StatefulWidget {
   final int? id;
-  final String? status;
 
-  NovaMov({this.id, this.status});
+  NovaMov({this.id});
 
   @override
   _NovaMovState createState() => _NovaMovState();
@@ -27,27 +27,29 @@ class _NovaMovState extends State<NovaMov> {
   bool isReadOnly = false;
   final SQLite _dbHelper = SQLite();
   Map<String, String>? dadosMovimentacao;
+  late ScrollController _scrollController;
+  bool _showScrollToTopButton = false;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController()
+      ..addListener(() {
+        setState(() {
+          _showScrollToTopButton = _scrollController.offset > 200;
+        });
+      });
+
     if (widget.id != null) {
       _carregarMovimentacao(widget.id!);
-    }
-    if (widget.status == 'Finalizada') {
-      setState(() {
-        isReadOnly = true;
-      });
     }
   }
 
   Future<void> _carregarMovimentacao(int id) async {
-    final provOrigemDestino =
-    Provider.of<ProvOrigemDestino>(context, listen: false);
+    final provOrigemDestino = Provider.of<ProvOrigemDestino>(context, listen: false);
     final provPeca = Provider.of<ProvPeca>(context, listen: false);
     final movimentacao = await _dbHelper.obterMovimentoPorId(id);
-    final itens = await _dbHelper.obterItensPorMovimento(
-        id, movimentacao['mov_servidor']);
+    final itens = await _dbHelper.obterItensPorMovimento(id, movimentacao['mov_servidor']);
 
     if (movimentacao.isNotEmpty) {
       dadosMovimentacao = {
@@ -57,40 +59,35 @@ class _NovaMovState extends State<NovaMov> {
         'filial_destino': movimentacao['filial_destino'] ?? '',
       };
 
-      provOrigemDestino.setOrigem(movimentacao['origem'],
-          filial: movimentacao['filial_origem']);
-      provOrigemDestino.setDestino(movimentacao['destino'],
-          filial: movimentacao['filial_destino']);
+      provOrigemDestino.setOrigem(movimentacao['origem'], filial: movimentacao['filial_origem']);
+      provOrigemDestino.setDestino(movimentacao['destino'], filial: movimentacao['filial_destino']);
 
-      // Inicializa o contador de peças com o total de itens
       provPeca.inicializarContadorPeca(itens.length);
 
       if (itens.isNotEmpty) {
         final ultimaPeca = itens.last;
         provPeca.setUltimaPeca(ultimaPeca['localizacao'], ultimaPeca['filial']);
       } else {
-        provPeca.limpar(); // Limpa caso não haja itens
+        provPeca.limpar();
       }
-    }
 
-    setState(() {
-      pecas = itens
-          .map((item) => {
-        'peca': item['peca'],
-        'partida': item['partida'],
-        'material': item['material'],
-        'descMaterial': item['desc_material'],
-        'cor': item['cor_material'],
-        'descCor': item['desc_cor_material'],
-        'unidade': item['unidade'],
-        'qtde': (item['quantidade'] is int)
-            ? item['quantidade'].toDouble()
-            : item['quantidade'],
-        'filial': item['filial'],
-        'localizacao': item['localizacao'],
-      })
-          .toList();
-    });
+      // Define isReadOnly baseado no status da movimentação
+      setState(() {
+        isReadOnly = movimentacao['status'] == 'Finalizada';
+        pecas = itens.map((item) => {
+          'peca': item['peca'],
+          'partida': item['partida'],
+          'material': item['material'],
+          'descMaterial': item['desc_material'],
+          'cor': item['cor_material'],
+          'descCor': item['desc_cor_material'],
+          'unidade': item['unidade'],
+          'qtde': (item['quantidade'] is int) ? item['quantidade'].toDouble() : item['quantidade'],
+          'filial': item['filial'],
+          'localizacao': item['localizacao'],
+        }).toList();
+      });
+    }
   }
 
   void adicionarPeca(Map<String, dynamic> peca) {
@@ -129,7 +126,7 @@ class _NovaMovState extends State<NovaMov> {
           bottom: FormOrigemDestino(dados: dadosMovimentacao, isReadOnly: isReadOnly),
           customLeading: BotaoVoltar(
             pecas: pecas,
-            status: widget.status,
+            status: isReadOnly ? 'Finalizada' : 'Em andamento',
             movimentacaoId: widget.id,
           ),
         ),
@@ -138,6 +135,7 @@ class _NovaMovState extends State<NovaMov> {
           children: [
             Expanded(
               child: ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.only(top: 16.0, bottom: 80),
                 itemCount: pecas.length,
                 itemBuilder: (context, index) {
@@ -168,29 +166,55 @@ class _NovaMovState extends State<NovaMov> {
             ),
           ],
         ),
-        floatingActionButton: Padding(
-          padding: const EdgeInsets.only(left: 32, right: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SizedBox(width: 40), // Espaço vazio para manter o botão centralizado
-              BotaoAdicionarPeca(
-                onPecaAdicionada: (peca) {
-                  adicionarPeca(peca);
-                },
-                heroTag: 'uniqueAddPecaButtonForNovaMov',  // Hero tag único para evitar conflitos
+        floatingActionButton: Stack(
+          children: [
+            if (_showScrollToTopButton)
+              Positioned(
+                left: 20,
+                bottom: 0,
+                child: BotaoRolarTopo(
+                  onPressed: () {
+                    _scrollController.animateTo(
+                      0,
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  heroTag: 'uniqueScrollTopButtonForNovaMov',
+                ),
               ),
-              BotaoEncerrar(
-                onPressed: () {
-                  print('Encerrar!');
-                },
-                heroTag: 'uniqueEncerrarButtonForNovaMov',  // Hero tag único para evitar conflitos
+            if (!isReadOnly) ...[
+              Positioned(
+                left: MediaQuery.of(context).size.width / 2 - 28,
+                bottom: 0,
+                child: BotaoAdicionarPeca(
+                  onPecaAdicionada: (peca) {
+                    adicionarPeca(peca);
+                  },
+                  heroTag: 'uniqueAddPecaButtonForNovaMov',
+                ),
+              ),
+              Positioned(
+                right: 20,
+                bottom: 0,
+                child: BotaoEncerrar(
+                  onPressed: () {
+                    // Lógica para encerrar a movimentação
+                  },
+                  heroTag: 'uniqueSEncerrarButton',
+                ),
               ),
             ],
-          ),
+          ],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 }

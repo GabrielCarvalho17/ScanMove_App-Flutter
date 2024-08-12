@@ -189,7 +189,7 @@ class _HistMovState extends State<HistMov> {
 
                   Navigator.pushNamed(context, '/nova_mov');
                 },
-                heroTag: 'uniqueAddMovButton',
+                heroTag: 'uniqueAddPecaButtonForNovaMov',
               ),
             ),
           ],

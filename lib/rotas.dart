@@ -17,8 +17,7 @@ class Rotas {
         return MaterialPageRoute(builder: (_) => HistMov());
       case novaMov:
         return MaterialPageRoute(builder: (_) => NovaMov(
-          id: args?['id'],
-          status: args?['status'],
+          id: args?['id']
         ));
       default:
         return MaterialPageRoute(builder: (_) => HistMov());
