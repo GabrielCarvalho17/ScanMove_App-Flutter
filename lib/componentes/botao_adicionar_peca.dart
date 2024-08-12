@@ -8,7 +8,7 @@ import 'package:AppEstoqueMP/componentes/dialogo.dart';
 
 class BotaoAdicionarPeca extends StatelessWidget {
   final Function(Map<String, dynamic>) onPecaAdicionada;
-  final Object? heroTag;  // Adiciona o parâmetro heroTag
+  final Object? heroTag;
 
   const BotaoAdicionarPeca({required this.onPecaAdicionada, this.heroTag, Key? key})
       : super(key: key);
@@ -30,21 +30,40 @@ class BotaoAdicionarPeca extends StatelessWidget {
                 },
               );
             } else {
-              Map<String, dynamic>? peca =
-              await _adicionarPeca(context, provOrigemDestino.origem);
-              if (peca != null) {
-                onPecaAdicionada(peca);
-                Provider.of<ProvPeca>(context, listen: false).setUltimaPeca(
-                    peca['localizacao'], peca['filial']);
+              try {
+                final peca = await _adicionarPeca(context, provOrigemDestino.origem);
+                if (peca != null) {
+                  onPecaAdicionada(peca);
+                  Provider.of<ProvPeca>(context, listen: false).setUltimaPeca(
+                      peca['localizacao'], peca['filial']);
+                }
+              } catch (e) {
+                String mensagemErro;
+                if (e is PecaNotFoundException) {
+                  mensagemErro = e.message;
+                } else if (e.toString().contains('O servidor não está respondendo.')) {
+                  mensagemErro = 'O servidor não está respondendo. Tente novamente mais tarde.';
+                } else {
+                  mensagemErro = 'Ocorreu um erro ao adicionar a peça.';
+                }
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return DialogoErro(
+                      titulo: 'Erro',
+                      mensagem: mensagemErro,
+                    );
+                  },
+                );
               }
             }
           },
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(50.0),
           ),
-          backgroundColor: Theme.of(context).primaryColor, // Transparent to show the container's color
+          backgroundColor: Theme.of(context).primaryColor,
           elevation: 5,
-          heroTag: heroTag,  // Utiliza a tag hero única
+          heroTag: heroTag,
           child: Icon(
             Icons.add,
             size: 30.0,
@@ -74,7 +93,7 @@ class BotaoAdicionarPeca extends StatelessWidget {
         throw Exception('Código de barras vazio');
       }
 
-      final pecaModel = await servPeca.fetchPeca(barcode);
+      final pecaModel = await servPeca.fetchPeca(context, barcode);
       print('Modelo de peça: ${pecaModel.toString()}');
 
       if (pecaModel.localizacao != origem) {
@@ -103,29 +122,9 @@ class BotaoAdicionarPeca extends StatelessWidget {
         'qtde': pecaModel.qtde,
       };
     } on PecaNotFoundException catch (e) {
-      print('Peça não encontrada: ${e.message}');
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return DialogoErro(
-            titulo: 'Atenção',
-            mensagem: e.message,
-          );
-        },
-      );
-      return null;
+      throw e; // Passa a exceção adiante para o bloco catch
     } catch (e) {
-      print('Erro: $e');
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return DialogoErro(
-            titulo: 'Erro',
-            mensagem: 'Ocorreu um erro ao adicionar a peça.',
-          );
-        },
-      );
-      return null;
+      throw Exception('Ocorreu um erro ao adicionar a peça: $e');
     }
   }
 }
