@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class Movimentacao extends StatelessWidget {
+class MovimentacaoCard extends StatelessWidget {
   final int id;
   final DateTime data;
   final String origem;
@@ -9,7 +9,7 @@ class Movimentacao extends StatelessWidget {
   final String usuario;
   final String status;
 
-  const Movimentacao({
+  const MovimentacaoCard({
     Key? key,
     required this.id,
     required this.data,

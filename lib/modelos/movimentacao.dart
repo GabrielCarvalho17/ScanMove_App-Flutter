@@ -1,48 +1,7 @@
-class ItemMovimentacao {
-  final String peca;
-  final String partida;
-  final String material;
-  final String descMaterial;
-  final String corMaterial;
-  final String descCorMaterial;
-  final String unidade;
-  final double quantidade;
-  final int movSqlite; // Campo para gerenciamento interno no app
-
-  ItemMovimentacao({
-    required this.peca,
-    required this.partida,
-    required this.material,
-    required this.descMaterial,
-    required this.corMaterial,
-    required this.descCorMaterial,
-    required this.unidade,
-    required this.quantidade,
-    required this.movSqlite, // Inicializa o campo movSqlite
-  });
-
-  // Método toJson com parâmetro opcional para incluir movSqlite
-  Map<String, dynamic> toJson({bool includeMovSqlite = false}) {
-    final Map<String, dynamic> json = {
-      'peca': peca,
-      'partida': partida,
-      'material': material,
-      'desc_material': descMaterial,
-      'cor_material': corMaterial,
-      'desc_cor_material': descCorMaterial,
-      'unidade': unidade,
-      'quantidade': quantidade,
-    };
-
-    if (includeMovSqlite) {
-      json['mov_sqlite'] = movSqlite;
-    }
-
-    return json;
-  }
-}
-
-class Movimentacao {
+import 'package:AppEstoqueMP/modelos/peca.dart';
+// Classe MovimentacaoModel
+class MovimentacaoModel {
+  final int movServidor;
   final String dataInicio;
   final String dataModificacao;
   final String status;
@@ -50,9 +9,10 @@ class Movimentacao {
   final String origem;
   final String destino;
   final int totalPecas;
-  final List<ItemMovimentacao> itens;
+  final List<PecaModel> pecas;
 
-  Movimentacao({
+  MovimentacaoModel({
+    required this.movServidor,
     required this.dataInicio,
     required this.dataModificacao,
     required this.status,
@@ -60,12 +20,30 @@ class Movimentacao {
     required this.origem,
     required this.destino,
     required this.totalPecas,
-    required this.itens,
+    required this.pecas,
   });
 
-  // Método toJson para converter Movimentacao e seus itens em JSON
+  // Método para criar um objeto MovimentacaoModel a partir de um JSON
+  factory MovimentacaoModel.fromJson(Map<String, dynamic> json) {
+    return MovimentacaoModel(
+      movServidor: json['movimentacao'],
+      dataInicio: json['data_inicio'],
+      dataModificacao: json['data_modificacao'],
+      status: json['status'],
+      usuario: json['usuario'],
+      origem: json['origem'],
+      destino: json['destino'],
+      totalPecas: json['total_pecas'],
+      pecas: (json['pecas'] as List<dynamic>)
+          .map((item) => PecaModel.fromJson(item))
+          .toList(),
+    );
+  }
+
+  // Método toJson para enviar dados de volta ao servidor ou para outros propósitos
   Map<String, dynamic> toJson() {
     return {
+      'movimentacao': movServidor,
       'data_inicio': dataInicio,
       'data_modificacao': dataModificacao,
       'status': status,
@@ -73,7 +51,7 @@ class Movimentacao {
       'origem': origem,
       'destino': destino,
       'total_pecas': totalPecas,
-      'itens': itens.map((item) => item.toJson()).toList(),
+      'pecas': pecas.map((item) => item.toJson()).toList(),
     };
   }
 }

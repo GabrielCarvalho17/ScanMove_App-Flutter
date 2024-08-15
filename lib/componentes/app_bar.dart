@@ -63,7 +63,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
         title: Padding(
           padding: const EdgeInsets.only(left: 16.0), // Espaçamento padrão entre o título e o leading
           child: AnimatedSwitcher(
-            duration: Duration(milliseconds: 300),
+            duration: Duration(milliseconds: 100),
             child: _isSearching
                 ? CustomSearchBar(
               controller: _searchController,

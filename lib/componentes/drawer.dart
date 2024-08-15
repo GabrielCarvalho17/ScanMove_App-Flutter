@@ -18,7 +18,7 @@ class CustomDrawer extends StatelessWidget {
             height: 200.0,
             child: DrawerHeader(
               decoration: BoxDecoration(
-                color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
+                color: Color(0xFF212529),
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -38,9 +38,8 @@ class CustomDrawer extends StatelessWidget {
                       provUsuario.username,
                       style: TextStyle(color: Colors.white, fontSize: 20),
                     ),
-                    // Adicione o email ou deixe vazio
                     Text(
-                      '', // Se desejar adicionar um e-mail ou outro campo, modifique aqui
+                      '',
                       style: TextStyle(color: Colors.white),
                     ),
                   ],
@@ -51,59 +50,71 @@ class CustomDrawer extends StatelessWidget {
           ListTile(
             leading: Icon(
               Icons.add_circle,
-              color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
+              color: Color(0xFF212529),
             ),
             title: Text(
               'Movimentar',
               style: TextStyle(
-                color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
+                color: Color(0xFF212529),
               ),
             ),
             onTap: () {
-              Navigator.of(context).pushReplacementNamed(
-                '/nova_mov',
-                arguments: {
-                  'id': null, // Passa `null` se estiver iniciando uma nova movimentação
-                  'status': 'ativo', // Define o status como "ativo"
-                },
-              );
+              if (Navigator.canPop(context)) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).pushReplacementNamed(
+                    '/nova_mov',
+                    arguments: {
+                      'id': null,
+                      'status': 'ativo',
+                    },
+                  );
+                });
+              }
             },
           ),
           ListTile(
             leading: Icon(
               Icons.history,
-              color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
+              color: Color(0xFF212529),
             ),
             title: Text(
               'Histórico',
               style: TextStyle(
-                color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
+                color: Color(0xFF212529),
               ),
             ),
             onTap: () {
-              Navigator.of(context).pushReplacementNamed(
-                '/hist_mov',
-                arguments: {
-                  'id': provUsuario.username, // Passa o username como parte do mapa
-                  'status': 'finalizado', // Adiciona um status ou outro argumento relevante
-                },
-              );
+              if (Navigator.canPop(context)) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).pushReplacementNamed(
+                    '/hist_mov',
+                    arguments: {
+                      'id': provUsuario.username,
+                      'status': 'finalizado',
+                    },
+                  );
+                });
+              }
             },
           ),
           ListTile(
             leading: Icon(
               Icons.exit_to_app,
-              color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
+              color: Color(0xFF212529),
             ),
             title: Text(
               'Sair',
               style: TextStyle(
-                color: Color(0xFF212529), // Cor hexadecimal aplicada diretamente
+                color: Color(0xFF212529),
               ),
             ),
             onTap: () async {
               await provUsuario.logout();
-              Navigator.of(context).pushReplacementNamed('/login');
+              if (Navigator.canPop(context)) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).pushReplacementNamed('/login');
+                });
+              }
             },
           ),
         ],

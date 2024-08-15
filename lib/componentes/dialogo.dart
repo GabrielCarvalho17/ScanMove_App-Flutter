@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class DialogoErro extends StatelessWidget {
+class CustomDialogo extends StatelessWidget {
   final String titulo;
   final String mensagem;
   final double alturaMinimaTexto;
@@ -10,7 +10,7 @@ class DialogoErro extends StatelessWidget {
   final VoidCallback? onBotao2Pressed;
   final bool isLoading;
 
-  const DialogoErro({
+  const CustomDialogo({
     Key? key,
     this.titulo = 'Atenção!',
     required this.mensagem,

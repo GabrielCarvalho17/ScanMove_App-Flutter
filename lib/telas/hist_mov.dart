@@ -1,14 +1,15 @@
+import 'package:AppEstoqueMP/provedores/movimentacao.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:AppEstoqueMP/servicos/sqlite.dart';
 import 'package:AppEstoqueMP/componentes/movimentacao.dart';
 import 'package:AppEstoqueMP/componentes/drawer.dart';
 import 'package:AppEstoqueMP/componentes/app_bar.dart';
 import 'package:AppEstoqueMP/componentes/botao_adicionar_mov.dart';
 import 'package:AppEstoqueMP/componentes/botao_sincronizar.dart';
 import 'package:AppEstoqueMP/componentes/botao_rolar_topo.dart';
-import 'package:AppEstoqueMP/componentes/dialogo.dart';  // Importar o dialogo
-import 'package:AppEstoqueMP/provedores/peca.dart';
+import 'package:AppEstoqueMP/servicos/movimentacao.dart';
+import 'package:AppEstoqueMP/modelos/movimentacao.dart';
+import 'package:AppEstoqueMP/componentes/dialogo.dart';
+import 'package:provider/provider.dart';
 
 class HistMov extends StatefulWidget {
   @override
@@ -16,64 +17,70 @@ class HistMov extends StatefulWidget {
 }
 
 class _HistMovState extends State<HistMov> {
-  List<Map<String, dynamic>> movimentacoes = [];
+  List<MovimentacaoModel> movimentacoes = [];
+  final ServMovimentacao servMovimentacao = ServMovimentacao();
+  bool isLoading = true;
   late ScrollController _scrollController;
   bool _showScrollToTopButton = false;
 
   @override
   void initState() {
     super.initState();
+
     _scrollController = ScrollController()
       ..addListener(() {
         setState(() {
-          _showScrollToTopButton = _scrollController.offset > 200; // Ajuste o valor conforme necessário
+          _showScrollToTopButton = _scrollController.offset > 200;
         });
       });
+
     _carregarMovimentacoes();
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
   Future<void> _carregarMovimentacoes() async {
-    final db = SQLite();
-    final movs = await db.obterMovimentos();
     setState(() {
-      movimentacoes = movs;
+      isLoading = true;
     });
+
+    try {
+      final movimentacoesExistentes =
+          await servMovimentacao.getMovimentacoesExistentes();
+
+      if (movimentacoesExistentes.isEmpty) {
+        movimentacoes = await servMovimentacao.obterMovimentacoesDoServidor();
+      } else {
+        movimentacoes = movimentacoesExistentes;
+      }
+    } catch (e) {
+      print('Erro ao carregar movimentações: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
-  void _deletarMovimentacao(int id) async {
-    final db = SQLite();
-    await db.deletarMovimento(id);
-    _carregarMovimentacoes(); // Recarrega as movimentações após a exclusão
-  }
-
-  Future<bool> _confirmDismiss(BuildContext context, Map<String, dynamic> mov) async {
-    if (mov['status'] == 'Finalizada') {
-      // Exibe o diálogo de erro se o status for 'Finalizada'
+  Future<bool> _confirmDismiss(
+      BuildContext context, MovimentacaoModel mov) async {
+    if (mov.status == 'Finalizada') {
       await showDialog(
         context: context,
         builder: (BuildContext context) {
-          return DialogoErro(
+          return CustomDialogo(
             titulo: 'Ação Impossível',
             mensagem: 'Não é possível excluir uma movimentação finalizada.',
           );
         },
       );
-      return false; // Não permite a exclusão
+      return false;
     }
 
     bool shouldDelete = false;
 
-    // Exibe o diálogo de confirmação se o status não for 'Finalizada'
     await showDialog(
       context: context,
       builder: (BuildContext context) {
-        return DialogoErro(
+        return CustomDialogo(
           titulo: 'Confirmar Exclusão',
           mensagem: 'Você realmente deseja excluir esta movimentação?',
           textoBotao1: 'Cancelar',
@@ -93,101 +100,114 @@ class _HistMovState extends State<HistMov> {
     return shouldDelete;
   }
 
+  Future<bool> _deletarMovimentacao(int movServidor) async {
+    bool retorno = await servMovimentacao.deletarMovimentoLocal(movServidor);
+    if (retorno) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MediaQuery.removeViewInsets(
       removeBottom: true,
       context: context,
       child: Scaffold(
-        backgroundColor: Color(0xFFf3f3f3),
-        appBar: CustomAppBar(
-          titleText: 'Histórico',
-          customHeight: 70,
-        ),
+        appBar: CustomAppBar(titleText: 'Histórico', customHeight: 70),
         drawer: CustomDrawer(),
-        body: movimentacoes.isEmpty
-            ? Center(child: Text('Nenhuma movimentação encontrada'))
-            : ListView.builder(
-          controller: _scrollController,
-          padding: EdgeInsets.only(top: 16, bottom: 80),
-          itemCount: movimentacoes.length,
-          itemBuilder: (context, index) {
-            final mov = movimentacoes[index];
-            return Dismissible(
-              key: Key(mov['mov_sqlite'].toString()),
-              direction: DismissDirection.endToStart,
-              confirmDismiss: (direction) async {
-                if (direction == DismissDirection.endToStart) {
-                  return await _confirmDismiss(context, mov);
-                }
-                return false;
-              },
-              onDismissed: (direction) {
-                if (direction == DismissDirection.endToStart) {
-                  _deletarMovimentacao(mov['mov_sqlite']);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Movimentação ${mov['mov_sqlite']} deletada')),
-                  );
-                }
-              },
-              background: Container(
-                color: Theme.of(context).colorScheme.primary,
-                alignment: Alignment.centerRight,
-                padding: EdgeInsets.symmetric(horizontal: 20.0),
-                child: Icon(Icons.delete, color: Colors.white),
-              ),
-              child: Movimentacao(
-                id: mov['mov_sqlite'],
-                data: DateTime.parse(mov['data']),
-                origem: mov['origem'],
-                destino: mov['destino'] ?? 'N/A',
-                totalPecas: mov['total_pecas'],
-                usuario: mov['usuario'],
-                status: mov['status'],
-              ),
-            );
-          },
-        ),
+        body: isLoading
+            ? Center(child: CircularProgressIndicator())
+            : movimentacoes.isEmpty
+                ? Center(child: Text('Nenhuma movimentação encontrada'))
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: EdgeInsets.only(top: 16, bottom: 80),
+                    itemCount: movimentacoes.length,
+                    itemBuilder: (context, index) {
+                      final mov = movimentacoes[index];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/nova_mov',
+                            arguments: {
+                              'id': mov.movServidor,
+                            },
+                          );
+                        },
+                        child: Dismissible(
+                          key: Key(mov.movServidor.toString()),
+                          direction: DismissDirection.endToStart,
+                          confirmDismiss: (direction) async {
+                            if (direction == DismissDirection.endToStart) {
+                              return await _confirmDismiss(context, mov);
+                            }
+                            return false;
+                          },
+                          onDismissed: (direction) {
+                            if (direction == DismissDirection.endToStart) {
+                              setState(() {
+                                movimentacoes.removeAt(index);
+                              });
+
+                              _deletarMovimentacao(mov.movServidor);
+                            }
+                          },
+                          background: Container(
+                            color: Theme.of(context).colorScheme.primary,
+                            alignment: Alignment.centerRight,
+                            padding: EdgeInsets.symmetric(horizontal: 20.0),
+                            child: Icon(Icons.delete, color: Colors.white),
+                          ),
+                          child: MovimentacaoCard(
+                            id: mov.movServidor,
+                            data: DateTime.parse(mov.dataInicio),
+                            origem: mov.origem,
+                            destino: mov.destino,
+                            totalPecas: mov.totalPecas,
+                            usuario: mov.usuario,
+                            status: mov.status,
+                          ),
+                        ),
+                      );
+                    }),
         floatingActionButton: Stack(
           children: [
-            // Botão para rolar para o topo (visível apenas quando necessário)
             if (_showScrollToTopButton)
               Positioned(
                 left: 20,
                 bottom: 0,
                 child: BotaoRolarTopo(
                   onPressed: () {
-                    _scrollController.animateTo(
-                      0,
-                      duration: Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
+                    _scrollController.animateTo(0,
+                        duration: Duration(milliseconds: 300),
+                        curve: Curves.easeInOut);
                   },
                   heroTag: 'uniqueScrollTopButton',
                 ),
               ),
-            // Botão de sincronizar (visível no centro)
             Positioned(
               left: MediaQuery.of(context).size.width / 2 - 28,
               bottom: 0,
               child: BotaoSincronizar(
                 onPressed: () {
-                  // Implementar a lógica de sincronização aqui
                   print('Sincronizar!');
                 },
                 heroTag: 'uniqueSyncButton',
               ),
             ),
-            // Botão de adicionar movimentação (visível sempre à direita)
             Positioned(
               right: 20,
               bottom: 0,
               child: BotaoAdicionarMov(
-                onPressed: () {
-                  // Zerar o contador de peças antes de navegar para a tela de nova movimentação
-                  Provider.of<ProvPeca>(context, listen: false).inicializarContadorPeca(0);
-
+                onPressed: () async {
                   Navigator.pushNamed(context, '/nova_mov');
+                  final movimentacaoProvider =
+                      Provider.of<MovimentacaoProvider>(context, listen: false);
+                  await movimentacaoProvider.limparEstadoAnterior();
+                  print(movimentacaoProvider.toString());
                 },
                 heroTag: 'uniqueAddPecaButtonForNovaMov',
               ),

@@ -1,14 +1,14 @@
-  class Localizacao {
+  class LocalizacaoModel {
     final String localizacao;
     final String filial;
 
-    Localizacao({
+    LocalizacaoModel({
       required this.localizacao,
       required this.filial,
     });
 
-    factory Localizacao.fromJson(Map<String, dynamic> json) {
-      return Localizacao(
+    factory LocalizacaoModel.fromJson(Map<String, dynamic> json) {
+      return LocalizacaoModel(
         localizacao: json['localizacao'],
         filial: json['filial'],
       );

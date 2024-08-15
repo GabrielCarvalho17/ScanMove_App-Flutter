@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/provedores/usuario.dart';
 import 'package:AppEstoqueMP/componentes/alerta.dart';
 import 'package:AppEstoqueMP/servicos/autenticacao.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -16,7 +17,12 @@ class LoginState extends State<Login> {
   final TextEditingController _controladorUsuario = TextEditingController();
   final TextEditingController _controladorSenha = TextEditingController();
   String _mensagemErro = '';
-  bool _isLoading = false;  // Variável para controlar o estado de carregamento
+  bool _isLoading = false; // Variável para controlar o estado de carregamento
+
+  Future<void> _salvarUsuarioLogado(String usuario) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('usuario_logado', usuario);
+  }
 
   String formatarUsername(String username) {
     return username.trim().toLowerCase();
@@ -46,6 +52,9 @@ class LoginState extends State<Login> {
         final servAutenticacao = ServAutenticacao();
         final autenticacao = await servAutenticacao.login(usuario, senha);
 
+        // Armazena o nome do usuário logado no SharedPreferences
+        await _salvarUsuarioLogado(usuario);
+
         await Provider.of<ProvUsuario>(context, listen: false).saveUser(
           usuario,
           autenticacao.accessToken,
@@ -55,11 +64,12 @@ class LoginState extends State<Login> {
         Navigator.of(context).pushReplacementNamed('/hist_mov');
       } catch (e) {
         setState(() {
-          _mensagemErro = e.toString().replaceAll('Exception: ', '');  // Remove qualquer ocorrência de "Exception: "
+          _mensagemErro = e.toString().replaceAll(
+              'Exception: ', ''); // Remove qualquer ocorrência de "Exception: "
         });
       } finally {
         setState(() {
-          _isLoading = false;  // Para o carregamento após a tentativa
+          _isLoading = false; // Para o carregamento após a tentativa
         });
       }
     });
@@ -91,7 +101,8 @@ class LoginState extends State<Login> {
                     labelText: 'Usuário',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10.0),
-                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary),
                     ),
                   ),
                 ),
@@ -102,7 +113,8 @@ class LoginState extends State<Login> {
                     labelText: 'Senha',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10.0),
-                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary),
                     ),
                   ),
                   obscureText: true,
@@ -112,7 +124,9 @@ class LoginState extends State<Login> {
                   width: double.infinity,
                   height: 50.0,
                   child: TextButton(
-                    onPressed: _isLoading ? null : _fazerLogin,  // Desabilita o botão durante o carregamento
+                    onPressed: _isLoading
+                        ? null
+                        : _fazerLogin, // Desabilita o botão durante o carregamento
                     style: TextButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -121,16 +135,18 @@ class LoginState extends State<Login> {
                       ),
                       textStyle: const TextStyle(fontSize: 18),
                     ),
-                    child: _isLoading  // Exibe o indicador de carregamento ou o texto do botão
-                        ? SizedBox(
-                      width: 24.0,
-                      height: 24.0,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.0,  // Tamanho reduzido
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                        : const Text('Entrar'),
+                    child:
+                        _isLoading // Exibe o indicador de carregamento ou o texto do botão
+                            ? SizedBox(
+                                width: 24.0,
+                                height: 24.0,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.0, // Tamanho reduzido
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
+                              )
+                            : const Text('Entrar'),
                   ),
                 ),
                 const SizedBox(height: 30),
