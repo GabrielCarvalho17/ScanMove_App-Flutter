@@ -75,7 +75,6 @@ class _NovaMovState extends State<NovaMov> {
 
     // Verifica se a movimentação está finalizada
     statusFinalizada = movimentacaoProvider.statusMovimentacao == 'Finalizada';
-
   }
 
   Future<void> _carregarMovimentacao(int movServidor) async {
@@ -95,13 +94,7 @@ class _NovaMovState extends State<NovaMov> {
       movimentacaoProvider.setUsuario(movimentacao['usuario']);
       movimentacaoProvider.setTotalPecas(pecas.length);
       movimentacaoProvider.setStatusMovimentacao(movimentacao['status']);
-
-      if (pecas.isNotEmpty) {
-        final primeiraLocalizacao = pecas.first['localizacao'];
-        movimentacaoProvider.setLocalizacaoPeca(primeiraLocalizacao);
-      }
-
-      movimentacaoProvider.setpecas(List<Map<String, dynamic>>.from(pecas));
+      movimentacaoProvider.carregarPecas(List<Map<String, dynamic>>.from(pecas));
 
       print(movimentacaoProvider.toString());
       setState(() {
@@ -121,6 +114,10 @@ class _NovaMovState extends State<NovaMov> {
   }
 
   Future<void> _mostrarDialogoExclusao(BuildContext context, int index) {
+    final peca = movimentacaoProvider.pecas[index];
+    final idPeca = peca['peca']
+        .toString(); // Supondo que 'peca' seja o identificador único
+
     return showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -140,9 +137,8 @@ class _NovaMovState extends State<NovaMov> {
     ).then((shouldDelete) {
       if (shouldDelete) {
         setState(() {
-          _pecas.removeAt(index);
-          // Atualiza o total de peças no provedor
-          movimentacaoProvider.setTotalPecas(_pecas.length);
+          movimentacaoProvider.removerPeca(idPeca);
+          print(movimentacaoProvider.toString());
         });
       }
     });
@@ -172,13 +168,14 @@ class _NovaMovState extends State<NovaMov> {
             ? Center(child: CircularProgressIndicator())
             : Column(
                 children: [
-                  Expanded(
-                    child: ListView.builder(
+                  Expanded(child: Consumer<MovimentacaoProvider>(
+                      builder: (context, movimentacaoProvider, child) {
+                    return ListView.builder(
                       controller: _scrollController,
                       padding: const EdgeInsets.only(top: 16.0, bottom: 80),
-                      itemCount: _pecas.length,
+                      itemCount: movimentacaoProvider.pecas.length,
                       itemBuilder: (context, index) {
-                        final item = _pecas[index];
+                        final item = movimentacaoProvider.pecas[index];
                         return Dismissible(
                           key: Key(item['peca'].toString()),
                           direction: DismissDirection.endToStart,
@@ -211,8 +208,8 @@ class _NovaMovState extends State<NovaMov> {
                           ),
                         );
                       },
-                    ),
-                  ),
+                    );
+                  })),
                 ],
               ),
         floatingActionButton: statusFinalizada

@@ -1,4 +1,3 @@
-// Classe ItemMovimentacaoModel
 class PecaModel {
   final String peca;
   final String partida;
@@ -6,8 +5,10 @@ class PecaModel {
   final String descMaterial;
   final String corMaterial;
   final String descCorMaterial;
+  final String localizacao;
   final String unidade;
   final double quantidade;
+  final String filialOrigem;
 
   PecaModel({
     required this.peca,
@@ -16,11 +17,13 @@ class PecaModel {
     required this.descMaterial,
     required this.corMaterial,
     required this.descCorMaterial,
+    required this.localizacao,
     required this.unidade,
     required this.quantidade,
+    required this.filialOrigem,
   });
 
-  // Método para criar um objeto ItemMovimentacaoModel a partir de um JSON
+
   factory PecaModel.fromJson(Map<String, dynamic> json) {
     return PecaModel(
       peca: json['peca'],
@@ -29,9 +32,10 @@ class PecaModel {
       descMaterial: json['desc_material'],
       corMaterial: json['cor_material'],
       descCorMaterial: json['desc_cor_material'],
+      localizacao: json['localizacao'],
       unidade: json['unidade'],
-      quantidade: double.parse(
-          json['quantidade'].toString()), // Garanta que seja um double
+      quantidade: double.parse(json['quantidade'].toString()),
+      filialOrigem: json['filial_origem'],
     );
   }
 
@@ -43,8 +47,10 @@ class PecaModel {
       'desc_material': descMaterial,
       'cor_material': corMaterial,
       'desc_cor_material': descCorMaterial,
+      'localizacao': localizacao,
       'unidade': unidade,
       'quantidade': quantidade,
+      'filial_origem': filialOrigem,
     };
   }
 }

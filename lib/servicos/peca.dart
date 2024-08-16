@@ -22,11 +22,11 @@ class ServPeca {
       final response = await _fetchPeca(peca);
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['results'] != null && data['results'].isNotEmpty) {
+        final List<dynamic> data = json.decode(response.body);
+        if (data.isNotEmpty) {
           return {
             'status': StatusPeca.sucesso,
-            'peca': PecaModel.fromJson(data['results'][0]),
+            'peca': PecaModel.fromJson(data[0]),  // Pega o primeiro item da lista
           };
         } else {
           return {

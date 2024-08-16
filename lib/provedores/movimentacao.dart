@@ -7,7 +7,6 @@ class MovimentacaoProvider with ChangeNotifier {
   String? _filialOrigem;
   String? _destino;
   String? _filialDestino;
-  String? _localizacaoPeca;
   String? _statusMovimentacao;
   int _totalPecas = 0;
   String? _usuario;
@@ -24,7 +23,6 @@ class MovimentacaoProvider with ChangeNotifier {
   String? get destino => _destino;
   String? get filialOrigem => _filialOrigem;
   String? get filialDestino => _filialDestino; // Correção no getter
-  String? get localizacaoAtual => _localizacaoPeca;
   String? get statusMovimentacao => _statusMovimentacao;
   int get totalPecas => _totalPecas;
   String? get usuarioAtual => _usuario;
@@ -32,14 +30,20 @@ class MovimentacaoProvider with ChangeNotifier {
   String? get dataModificacao => _dataModificacao;
   List<Map<String, dynamic>> get pecas => _pecas;
 
-  // Setters com validações
   void setOrigem(String? origem) {
     if (origem == _destino) {
       throw Exception('A origem não pode ser igual ao destino.');
-    } else if (_totalPecas > 0 && origem != _localizacaoPeca) {
-      throw Exception(
-          'A origem não pode ser diferente da localização atual das peças.');
     }
+
+    if (_pecas.isNotEmpty) {
+      final localizacaoPrimeiraPeca = _pecas.first['localizacao'];
+      print(localizacaoPrimeiraPeca);
+      if (origem != localizacaoPrimeiraPeca) {
+        throw Exception(
+            'A origem não pode ser diferente da localização atual das peças.');
+      }
+    }
+
     _origem = origem;
     notifyListeners();
   }
@@ -60,17 +64,6 @@ class MovimentacaoProvider with ChangeNotifier {
   void setFilialDestino(String? filialDestino) {
     _filialDestino = filialDestino;
     notifyListeners();
-  }
-
-  void setLocalizacaoPeca(String? localizacaoPeca) {
-    if (_origem == null) {
-      throw Exception('Defina a origem antes de tentar adicionar alguma peça.');
-    } else if (localizacaoPeca != null && _origem != localizacaoPeca) {
-      throw Exception('A peça não está na localização de origem informada.');
-    } else {
-      _localizacaoPeca = localizacaoPeca;
-      notifyListeners();
-    }
   }
 
   void setTotalPecas(int totalPecas) {
@@ -98,14 +91,12 @@ class MovimentacaoProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void adicionarItem(Map<String, dynamic> item) {}
-
   void setUsuario(String usuario) {
     _usuario = usuario.toLowerCase();
     notifyListeners();
   }
 
-  void setpecas(List<Map<String, dynamic>> list) {
+  void carregarPecas(List<Map<String, dynamic>> list) {
     _pecas = list;
     notifyListeners();
   }
@@ -152,7 +143,6 @@ class MovimentacaoProvider with ChangeNotifier {
     _filialOrigem = null;
     _destino = null;
     _filialDestino = null;
-    _localizacaoPeca = null;
     _statusMovimentacao = 'Inclusão';
     _totalPecas = 0;
     _dataInicio = null;
@@ -171,15 +161,42 @@ MovimentacaoProvider {
   Destino: $_destino,
   Filial Origem: $_filialOrigem,
   Filial Destino: $_filialDestino,
-  Localizacao da Peça: $_localizacaoPeca,
   Status da Movimentação: $_statusMovimentacao,
   Total de Peças: $_totalPecas,
   Usuário: $_usuario,
   Data de Início: $_dataInicio,
   Data de Modificação: $_dataModificacao,
   Peças: ${_formatarPecasIds()}
+  $_pecas
 }
 ''';
+  }
+
+  void adicionarPeca(Map<String, dynamic> peca) {
+    final indiceExistente =
+        _pecas.indexWhere((elemento) => elemento['peca'] == peca['peca']);
+
+    if (indiceExistente >= 0) {
+      throw Exception('A peça já foi adicionada.');
+    } else {
+      _pecas.add(peca);
+    }
+    _totalPecas = _pecas.length;
+
+    notifyListeners();
+  }
+
+  void removerPeca(String peca) {
+    final indiceExistente =
+        _pecas.indexWhere((elemento) => elemento['peca'] == peca);
+
+    if (indiceExistente >= 0) {
+      _pecas.removeAt(indiceExistente);
+      _totalPecas = _pecas.length;
+      notifyListeners();
+    } else {
+      throw Exception('A peça com o ID $peca não foi encontrada.');
+    }
   }
 
   String _formatarPecasIds() {

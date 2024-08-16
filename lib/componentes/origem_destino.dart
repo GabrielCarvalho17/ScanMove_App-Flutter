@@ -45,7 +45,7 @@ class _OrigemDestinoState extends State<OrigemDestino> {
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => _scanBarcode(context, true),
+                    onTap: () => _adicionarLocalizacao(context, true),
                     child: AbsorbPointer(
                       child: TextField(
                         controller: TextEditingController(text: origem),
@@ -77,7 +77,7 @@ class _OrigemDestinoState extends State<OrigemDestino> {
                 ),
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => _scanBarcode(context, false),
+                    onTap: () => _adicionarLocalizacao(context, false),
                     child: AbsorbPointer(
                       child: TextField(
                         controller: TextEditingController(text: destino),
@@ -123,7 +123,7 @@ class _OrigemDestinoState extends State<OrigemDestino> {
     );
   }
 
-  Future<void> _scanBarcode(BuildContext context, bool isOrigem) async {
+  Future<void> _adicionarLocalizacao(BuildContext context, bool isOrigem) async {
     bool loadingExibido = false;
     Timer? timer;
 

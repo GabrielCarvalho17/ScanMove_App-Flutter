@@ -1,5 +1,5 @@
 import 'package:AppEstoqueMP/modelos/peca.dart';
-// Classe MovimentacaoModel
+
 class MovimentacaoModel {
   final int movServidor;
   final String dataInicio;
@@ -9,6 +9,8 @@ class MovimentacaoModel {
   final String origem;
   final String destino;
   final int totalPecas;
+  final String filialOrigem;
+  final String filialDestino;
   final List<PecaModel> pecas;
 
   MovimentacaoModel({
@@ -20,10 +22,11 @@ class MovimentacaoModel {
     required this.origem,
     required this.destino,
     required this.totalPecas,
+    required this.filialOrigem,
+    required this.filialDestino,
     required this.pecas,
   });
 
-  // Método para criar um objeto MovimentacaoModel a partir de um JSON
   factory MovimentacaoModel.fromJson(Map<String, dynamic> json) {
     return MovimentacaoModel(
       movServidor: json['movimentacao'],
@@ -34,13 +37,14 @@ class MovimentacaoModel {
       origem: json['origem'],
       destino: json['destino'],
       totalPecas: json['total_pecas'],
+      filialOrigem: json['filial_origem'],
+      filialDestino: json['filial_destino'],
       pecas: (json['pecas'] as List<dynamic>)
           .map((item) => PecaModel.fromJson(item))
           .toList(),
     );
   }
 
-  // Método toJson para enviar dados de volta ao servidor ou para outros propósitos
   Map<String, dynamic> toJson() {
     return {
       'movimentacao': movServidor,
@@ -51,6 +55,8 @@ class MovimentacaoModel {
       'origem': origem,
       'destino': destino,
       'total_pecas': totalPecas,
+      'filial_origem': filialOrigem,
+      'filial_destino': filialDestino,
       'pecas': pecas.map((item) => item.toJson()).toList(),
     };
   }

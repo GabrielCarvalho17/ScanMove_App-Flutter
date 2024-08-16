@@ -31,6 +31,8 @@ class ServMovimentacao {
           origem: mov['origem'],
           destino: mov['destino'],
           totalPecas: mov['total_pecas'],
+          filialOrigem: mov['filial_origem'], // Novo campo
+          filialDestino: mov['filial_destino'], // Novo campo
           pecas: [], // Lista de pecas pode ser preenchida conforme necessário
         );
       }).toList();
@@ -71,7 +73,7 @@ class ServMovimentacao {
             'origem': jsonMov['origem'],
             'destino': jsonMov['destino'],
             'total_pecas': jsonMov['total_pecas'],
-            'mov_servidor': jsonMov['movimentacao'], // Adiciona o mov_servidor
+            'mov_servidor': jsonMov['movimentacao'],
             'filial_origem': jsonMov['filial_origem'],
             'filial_destino': jsonMov['filial_destino'],
           });
@@ -85,16 +87,16 @@ class ServMovimentacao {
               'partida': peca.partida,
               'unidade': peca.unidade,
               'quantidade': peca.quantidade,
-              'mov_sqlite': movSqlite, // Associa o movSqlite ao item
+              'mov_sqlite': movSqlite,
               'desc_material': peca.descMaterial,
               'desc_cor_material': peca.descCorMaterial,
               'localizacao': jsonMov['origem'],
-              'filial': jsonMov['filial_origem'],
+              'filial': peca.filialOrigem,
             });
           }
 
           movimentacoes.add(MovimentacaoModel(
-            movServidor: jsonMov['movimentacao'], // Adiciona movServidor ao modelo
+            movServidor: jsonMov['movimentacao'],
             dataInicio: jsonMov['data_inicio'],
             dataModificacao: jsonMov['data_modificacao'],
             status: jsonMov['status'],
@@ -102,6 +104,8 @@ class ServMovimentacao {
             origem: jsonMov['origem'],
             destino: jsonMov['destino'],
             totalPecas: jsonMov['total_pecas'],
+            filialOrigem: jsonMov['filial_origem'],
+            filialDestino: jsonMov['filial_destino'],
             pecas: pecas,
           ));
         }
@@ -132,6 +136,8 @@ class ServMovimentacao {
         origem: mov['origem'],
         destino: mov['destino'],
         totalPecas: mov['total_pecas'],
+        filialOrigem: mov['filial_origem'],
+        filialDestino: mov['filial_destino'],
         pecas: [], // Você pode preencher esta lista conforme necessário
       );
     }).toList();
