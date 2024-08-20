@@ -14,27 +14,31 @@ class ServAutenticacao {
       final response = await http.post(
         Uri.parse('${Config.baseUrl}/token/'),
         headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8', // Garante que o charset seja UTF-8
+          'Content-Type': 'application/json; charset=UTF-8',
         },
         body: jsonEncode(<String, String>{
           'username': username,
           'password': password,
         }),
-      ).timeout(Duration(seconds: 15)); // Definindo timeout
+      ).timeout(Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
 
-        final List<Map<String, dynamic>> users = await _dbSqlite.obterUsuarios();
+        final List<Map<String, dynamic>> users = await _dbSqlite.listar(
+          'USUARIO',
+          where: 'username = ?',
+          whereArgs: [username],
+        );
 
         if (users.isNotEmpty) {
-          await _dbSqlite.atualizarUsuario(users.first['id'], {
+          await _dbSqlite.atualizar('USUARIO', users.first['id'], {
             'username': username,
             'access_token': data['access'],
             'refresh_token': data['refresh'],
           });
         } else {
-          await _dbSqlite.adicionarUsuario({
+          await _dbSqlite.inserir('USUARIO', {
             'username': username,
             'access_token': data['access'],
             'refresh_token': data['refresh'],
@@ -58,7 +62,10 @@ class ServAutenticacao {
   }
 
   Future<void> refreshToken() async {
-    final List<Map<String, dynamic>> users = await _dbSqlite.obterUsuarios();
+    final List<Map<String, dynamic>> users = await _dbSqlite.listar(
+      'USUARIO',
+      where: 'access_token IS NOT NULL AND access_token != ""',
+    );
     if (users.isNotEmpty) {
       final String refreshToken = users.first['refresh_token'];
       final response = await http.post(
@@ -73,7 +80,7 @@ class ServAutenticacao {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
-        await _dbSqlite.atualizarUsuario(users.first['id'], {
+        await _dbSqlite.atualizar('USUARIO', users.first['id'], {
           'access_token': data['access'],
         });
       } else {
@@ -105,12 +112,14 @@ class ServAutenticacao {
       }
     }
 
-    // Após a renovação do token, tenta novamente a requisição original
-    return await request();
+    return await request(); // Tenta novamente a requisição original após renovar o token
   }
 
   Future<http.Response> get(String url) async {
-    final List<Map<String, dynamic>> users = await _dbSqlite.obterUsuarios();
+    final List<Map<String, dynamic>> users = await _dbSqlite.listar(
+      'USUARIO',
+      where: 'access_token IS NOT NULL AND access_token != ""',
+    );
     final String token = users.isNotEmpty ? users.first['access_token'] : '';
 
     return makeAuthenticatedRequest(() {
@@ -125,7 +134,10 @@ class ServAutenticacao {
   }
 
   Future<http.Response> post(String url, Map<String, dynamic> body) async {
-    final List<Map<String, dynamic>> users = await _dbSqlite.obterUsuarios();
+    final List<Map<String, dynamic>> users = await _dbSqlite.listar(
+      'USUARIO',
+      where: 'access_token IS NOT NULL AND access_token != ""',
+    );
     final String token = users.isNotEmpty ? users.first['access_token'] : '';
 
     return makeAuthenticatedRequest(() {
@@ -141,9 +153,12 @@ class ServAutenticacao {
   }
 
   Future<void> logout() async {
-    final List<Map<String, dynamic>> users = await _dbSqlite.obterUsuarios();
+    final List<Map<String, dynamic>> users = await _dbSqlite.listar(
+      'USUARIO',
+      where: 'access_token IS NOT NULL AND access_token != ""',
+    );
     if (users.isNotEmpty) {
-      await _dbSqlite.atualizarUsuario(users.first['id'], {
+      await _dbSqlite.atualizar('USUARIO', users.first['id'], {
         'access_token': '',
         'refresh_token': '',
       });

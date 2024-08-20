@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class MovimentacaoCard extends StatelessWidget {
   final int id;
@@ -65,7 +66,7 @@ class MovimentacaoCard extends StatelessWidget {
                       ),
                     ]),
                     Text(
-                      '${data.toLocal().toString().split(' ')[0]} ${data.hour}:${data.minute.toString().padLeft(2, '0')}',
+                      DateFormat('dd/MM/yyyy HH:mm').format(data),
                       style: TextStyle(color: Colors.grey[600], fontSize: 15),
                     ),
                   ],

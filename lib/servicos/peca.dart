@@ -19,14 +19,18 @@ class ServPeca {
 
   Future<Map<String, dynamic>> fetchPeca(String peca) async {
     try {
+      // Obter a peça da API
       final response = await _fetchPeca(peca);
 
+      // Verificar o status da resposta
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final Map<String, dynamic> data = json.decode(response.body);
+
         if (data.isNotEmpty) {
+          // Retornar a peça encontrada
           return {
             'status': StatusPeca.sucesso,
-            'peca': PecaModel.fromJson(data[0]),  // Pega o primeiro item da lista
+            'peca': PecaModel.fromJson(data),  // Converte o JSON para PecaModel
           };
         } else {
           return {
@@ -58,19 +62,26 @@ class ServPeca {
   }
 
   Future<http.Response> _fetchPeca(String peca) async {
-    final List<Map<String, dynamic>> users = await _dbHelper.obterUsuarios();
+    // Obter o usuário ativo do banco de dados
+    final List<Map<String, dynamic>> users = await _dbHelper.listar(
+      'USUARIO',
+      where: 'access_token IS NOT NULL AND access_token != ""',
+    );
+
     if (users.isEmpty) {
       throw Exception('Usuário não encontrado no banco de dados.');
     }
 
+    // Obter o token do primeiro usuário encontrado
     String token = users.first['access_token'];
     final url = Uri.parse('${Config.baseUrl}/materiais/peca/$peca/');
 
+    // Fazer a requisição à API
     return await http.get(
       url,
       headers: {
         'Authorization': 'Bearer $token',
       },
-    ).timeout(Duration(seconds: 15)); // Define o timeout para o request
+    ).timeout(Duration(seconds: 15)); // Define o timeout para a requisição
   }
 }

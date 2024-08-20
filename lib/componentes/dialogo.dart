@@ -59,42 +59,40 @@ class CustomDialogo extends StatelessWidget {
               ),
             SizedBox(height: 24.0),
             if (!isLoading)
-              if (textoBotao1 != null && onBotao1Pressed != null)
-                Row(
-                  children: [
-                    if (textoBotao1 != null && onBotao1Pressed != null) ...[
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white12,
-                            foregroundColor: Theme.of(context).colorScheme.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(7),
-                            ),
+              Row(
+                children: [
+                  if (textoBotao1 != null && onBotao1Pressed != null)
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white12,
+                          foregroundColor: Theme.of(context).colorScheme.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(7),
                           ),
-                          child: Text(textoBotao1!),
-                          onPressed: onBotao1Pressed,
                         ),
+                        child: Text(textoBotao1!),
+                        onPressed: onBotao1Pressed,
                       ),
-                      if (textoBotao2 != null && onBotao2Pressed != null)
-                        SizedBox(width: 30),
-                    ],
-                    if (textoBotao2 != null && onBotao2Pressed != null)
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(7),
-                            ),
+                    ),
+                  if (textoBotao2 != null && onBotao2Pressed != null) ...[
+                    if (textoBotao1 != null) SizedBox(width: 30),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(7),
                           ),
-                          child: Text(textoBotao2!),
-                          onPressed: onBotao2Pressed,
                         ),
+                        child: Text(textoBotao2!),
+                        onPressed: onBotao2Pressed,
                       ),
+                    ),
                   ],
-                ),
+                ],
+              ),
             if (textoBotao1 == null && textoBotao2 == null && !isLoading)
               SizedBox(
                 width: double.infinity,

@@ -9,7 +9,6 @@ import 'package:AppEstoqueMP/componentes/botao_rolar_topo.dart';
 import 'package:AppEstoqueMP/componentes/botao_voltar.dart';
 import 'package:AppEstoqueMP/componentes/origem_destino.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
-import 'package:AppEstoqueMP/servicos/sqlite.dart';
 import 'package:provider/provider.dart';
 
 class NovaMov extends StatefulWidget {
@@ -22,14 +21,11 @@ class NovaMov extends StatefulWidget {
 }
 
 class _NovaMovState extends State<NovaMov> {
-  final SQLite sqlite = SQLite();
-  List<Map<String, dynamic>> _pecas = [];
-  bool isLoading = true;
   late ScrollController _scrollController;
   bool _showScrollToTopButton = false;
-  bool statusFinalizada = false;
-  late MovimentacaoProvider movimentacaoProvider;
   bool _isInitialized = false;
+  late MovimentacaoProvider movimentacaoProvider;
+  bool statusFinalizada = false;
 
   @override
   void initState() {
@@ -39,20 +35,11 @@ class _NovaMovState extends State<NovaMov> {
         _onScroll();
       });
 
-    // Atraso inicial de 5 milissegundos
     Future.delayed(Duration(milliseconds: 5), () {
       setState(() {
         _isInitialized = true;
       });
     });
-
-    if (widget.id != null) {
-      _carregarMovimentacao(widget.id!);
-    } else {
-      setState(() {
-        isLoading = false;
-      });
-    }
   }
 
   void _onScroll() {
@@ -70,55 +57,26 @@ class _NovaMovState extends State<NovaMov> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    movimentacaoProvider =
-        Provider.of<MovimentacaoProvider>(context, listen: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      movimentacaoProvider = Provider.of<MovimentacaoProvider>(context, listen: false);
 
-    // Verifica se a movimentação está finalizada
-    statusFinalizada = movimentacaoProvider.statusMovimentacao == 'Finalizada';
+      if (widget.id != null) {
+        final movimentacao = movimentacaoProvider.getMovimentacaoPorId(widget.id!);
+        if (movimentacao != null) {
+          movimentacaoProvider.setMovimentacaoAtual(movimentacao);
+          statusFinalizada = movimentacao.status == 'Finalizada';
+        }
+      }
+
+      _isInitialized = true;
+    });
   }
 
-  Future<void> _carregarMovimentacao(int movServidor) async {
-    try {
-      final dados = await sqlite.obterMovimentacaoComPecas(movServidor);
-      final movimentacao = dados['movimentacao'];
-      final pecas = dados['pecas'];
+  Future<void> _mostrarDialogoExclusao(BuildContext context, int index) async {
+    final peca = movimentacaoProvider.movimentacaoAtual!.pecas[index];
+    final idPeca = peca.peca.toString();
 
-      // Atualiza o provedor com os valores carregados
-      movimentacaoProvider.setMovServidor(movimentacao['mov_servidor']);
-      movimentacaoProvider.setOrigem(movimentacao['origem']);
-      movimentacaoProvider.setDestino(movimentacao['destino']);
-      movimentacaoProvider.setDataInicio(movimentacao['data_inicio']);
-      movimentacaoProvider.setDataModificacao(movimentacao['data_modificacao']);
-      movimentacaoProvider.setFilialOrigem(movimentacao['filial_origem']);
-      movimentacaoProvider.setFilialDestino(movimentacao['filial_destino']);
-      movimentacaoProvider.setUsuario(movimentacao['usuario']);
-      movimentacaoProvider.setTotalPecas(pecas.length);
-      movimentacaoProvider.setStatusMovimentacao(movimentacao['status']);
-      movimentacaoProvider.carregarPecas(List<Map<String, dynamic>>.from(pecas));
-
-      print(movimentacaoProvider.toString());
-      setState(() {
-        _pecas = List<Map<String, dynamic>>.from(pecas);
-        isLoading = false;
-      });
-
-      // Revalida o status finalizado após carregar os dados
-      statusFinalizada =
-          movimentacaoProvider.statusMovimentacao == 'Finalizada';
-    } catch (e) {
-      print('Erro ao carregar movimentação: $e');
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _mostrarDialogoExclusao(BuildContext context, int index) {
-    final peca = movimentacaoProvider.pecas[index];
-    final idPeca = peca['peca']
-        .toString(); // Supondo que 'peca' seja o identificador único
-
-    return showDialog(
+    final shouldDelete = await showDialog(
       context: context,
       builder: (BuildContext context) {
         return CustomDialogo(
@@ -134,14 +92,14 @@ class _NovaMovState extends State<NovaMov> {
           },
         );
       },
-    ).then((shouldDelete) {
-      if (shouldDelete) {
-        setState(() {
-          movimentacaoProvider.removerPeca(idPeca);
-          print(movimentacaoProvider.toString());
-        });
-      }
-    });
+    );
+
+    if (shouldDelete == true) {
+      setState(() {
+        movimentacaoProvider.removerPeca(idPeca);
+        print(movimentacaoProvider.toString());
+      });
+    }
   }
 
   @override
@@ -164,89 +122,87 @@ class _NovaMovState extends State<NovaMov> {
           customLeading: BotaoVoltar(),
         ),
         drawer: CustomDrawer(),
-        body: isLoading
-            ? Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  Expanded(child: Consumer<MovimentacaoProvider>(
-                      builder: (context, movimentacaoProvider, child) {
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.only(top: 16.0, bottom: 80),
-                      itemCount: movimentacaoProvider.pecas.length,
-                      itemBuilder: (context, index) {
-                        final item = movimentacaoProvider.pecas[index];
-                        return Dismissible(
-                          key: Key(item['peca'].toString()),
-                          direction: DismissDirection.endToStart,
-                          confirmDismiss: (direction) async {
-                            if (direction == DismissDirection.endToStart) {
-                              await _mostrarDialogoExclusao(context, index);
-                              return false;
-                            }
+        body: Column(
+          children: [
+            Expanded(child: Consumer<MovimentacaoProvider>(
+                builder: (context, movimentacaoProvider, child) {
+                  return ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.only(top: 16.0, bottom: 80),
+                    itemCount: movimentacaoProvider.movimentacaoAtual!.pecas.length,
+                    itemBuilder: (context, index) {
+                      final item = movimentacaoProvider.movimentacaoAtual!.pecas[index];
+                      return Dismissible(
+                        key: Key(item.peca.toString()),
+                        direction: DismissDirection.endToStart,
+                        confirmDismiss: (direction) async {
+                          if (direction == DismissDirection.endToStart) {
+                            await _mostrarDialogoExclusao(context, index);
                             return false;
-                          },
-                          background: Container(
-                            color: Theme.of(context).colorScheme.primary,
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Icon(Icons.delete, color: Colors.white),
-                              ),
+                          }
+                          return false;
+                        },
+                        background: Container(
+                          color: Theme.of(context).colorScheme.primary,
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Icon(Icons.delete, color: Colors.white),
                             ),
                           ),
-                          child: Peca(
-                            peca: item['peca'].toString(),
-                            partida: item['partida'].toString(),
-                            material: item['material'].toString(),
-                            descMaterial: item['desc_material'].toString(),
-                            cor: item['cor_material'].toString(),
-                            descCor: item['desc_cor_material'].toString(),
-                            unidade: item['unidade'].toString(),
-                            qtde: item['quantidade'] as double,
-                          ),
-                        );
-                      },
-                    );
-                  })),
-                ],
-              ),
+                        ),
+                        child: Peca(
+                          peca: item.peca,
+                          partida: item.partida,
+                          material: item.material,
+                          descMaterial: item.descMaterial,
+                          cor: item.corMaterial,
+                          descCor: item.descCorMaterial,
+                          unidade: item.unidade,
+                          qtde: item.quantidade,
+                        ),
+                      );
+                    },
+                  );
+                })),
+          ],
+        ),
         floatingActionButton: statusFinalizada
             ? null
             : Stack(
-                children: [
-                  if (_showScrollToTopButton)
-                    Positioned(
-                      left: 20,
-                      bottom: 0,
-                      child: BotaoRolarTopo(
-                        onPressed: () {
-                          _scrollController.animateTo(
-                            0,
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                        heroTag: 'uniqueScrollTopButtonForNovaMov',
-                      ),
-                    ),
-                  Positioned(
-                    left: MediaQuery.of(context).size.width / 2 - 28,
-                    bottom: 0,
-                    child: BotaoAdicionarPeca(
-                      heroTag: 'uniqueAddPecaButtonForNovaMov',
-                    ),
-                  ),
-                  Positioned(
-                    right: 20,
-                    bottom: 0,
-                    child: BotaoFinalizar(
-                      heroTag: 'uniqueEncerrarButtonForNovaMov',
-                    ),
-                  ),
-                ],
+          children: [
+            if (_showScrollToTopButton)
+              Positioned(
+                left: 20,
+                bottom: 0,
+                child: BotaoRolarTopo(
+                  onPressed: () {
+                    _scrollController.animateTo(
+                      0,
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  heroTag: 'uniqueScrollTopButtonForNovaMov',
+                ),
               ),
+            Positioned(
+              left: MediaQuery.of(context).size.width / 2 - 28,
+              bottom: 0,
+              child: BotaoAdicionarPeca(
+                heroTag: 'uniqueAddPecaButtonForNovaMov',
+              ),
+            ),
+            Positioned(
+              right: 20,
+              bottom: 0,
+              child: BotaoFinalizar(
+                heroTag: 'uniqueEncerrarButtonForNovaMov',
+              ),
+            ),
+          ],
+        ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );

@@ -8,7 +8,7 @@ class PecaModel {
   final String localizacao;
   final String unidade;
   final double quantidade;
-  final String filialOrigem;
+  final String filial;
 
   PecaModel({
     required this.peca,
@@ -20,9 +20,34 @@ class PecaModel {
     required this.localizacao,
     required this.unidade,
     required this.quantidade,
-    required this.filialOrigem,
+    required this.filial,
   });
 
+  PecaModel copyWith({
+    String? peca,
+    String? partida,
+    String? material,
+    String? descMaterial,
+    String? corMaterial,
+    String? descCorMaterial,
+    String? localizacao,
+    String? unidade,
+    double? quantidade,
+    String? filial,
+  }) {
+    return PecaModel(
+      peca: peca ?? this.peca,
+      partida: partida ?? this.partida,
+      material: material ?? this.material,
+      descMaterial: descMaterial ?? this.descMaterial,
+      corMaterial: corMaterial ?? this.corMaterial,
+      descCorMaterial: descCorMaterial ?? this.descCorMaterial,
+      localizacao: localizacao ?? this.localizacao,
+      unidade: unidade ?? this.unidade,
+      quantidade: quantidade ?? this.quantidade,
+      filial: filial ?? this.filial,
+    );
+  }
 
   factory PecaModel.fromJson(Map<String, dynamic> json) {
     return PecaModel(
@@ -35,7 +60,7 @@ class PecaModel {
       localizacao: json['localizacao'],
       unidade: json['unidade'],
       quantidade: double.parse(json['quantidade'].toString()),
-      filialOrigem: json['filial_origem'],
+      filial: json['filial'],
     );
   }
 
@@ -50,7 +75,7 @@ class PecaModel {
       'localizacao': localizacao,
       'unidade': unidade,
       'quantidade': quantidade,
-      'filial_origem': filialOrigem,
+      'filial': filial,
     };
   }
 }

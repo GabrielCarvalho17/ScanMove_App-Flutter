@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:barcode_scan2/barcode_scan2.dart';
@@ -30,9 +29,10 @@ class _OrigemDestinoState extends State<OrigemDestino> {
 
   @override
   Widget build(BuildContext context) {
-    final origem = movimentacaoProvider.origem ?? '';
-    final destino = movimentacaoProvider.destino ?? '';
-    final totalPecas = movimentacaoProvider.totalPecas;
+    final movimentacaoAtual = movimentacaoProvider.movimentacaoAtual;
+    final origem = movimentacaoAtual?.origem ?? '';
+    final destino = movimentacaoAtual?.destino ?? '';
+    final totalPecas = movimentacaoAtual?.totalPecas ?? 0;
 
     return Container(
       color: Theme.of(context).primaryColor,
@@ -55,7 +55,7 @@ class _OrigemDestinoState extends State<OrigemDestino> {
                         decoration: InputDecoration(
                           labelText: 'Origem',
                           labelStyle:
-                              TextStyle(color: Colors.white, fontSize: 18.0),
+                          TextStyle(color: Colors.white, fontSize: 18.0),
                           hintStyle: TextStyle(color: Colors.white70),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10.0),
@@ -87,7 +87,7 @@ class _OrigemDestinoState extends State<OrigemDestino> {
                         decoration: InputDecoration(
                           labelText: 'Destino',
                           labelStyle:
-                              TextStyle(color: Colors.white, fontSize: 18.0),
+                          TextStyle(color: Colors.white, fontSize: 18.0),
                           hintStyle: TextStyle(color: Colors.white70),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10.0),
@@ -124,13 +124,19 @@ class _OrigemDestinoState extends State<OrigemDestino> {
   }
 
   Future<void> _adicionarLocalizacao(BuildContext context, bool isOrigem) async {
+    final movimentacaoAtual = movimentacaoProvider.movimentacaoAtual;
+
+    if (movimentacaoAtual?.status == 'Finalizada') {
+      _mostrarDialogoErro(context, 'Ação Impossível', 'A movimentação já está finalizada.');
+      return;
+    }
+
     bool loadingExibido = false;
     Timer? timer;
 
     try {
       var result = await BarcodeScanner.scan();
       if (result.rawContent.isNotEmpty) {
-        // Inicia o timer para exibir o loading após 1 segundo
         timer = Timer(Duration(seconds: 1), () {
           loadingExibido = true;
           showDialog(
@@ -146,21 +152,16 @@ class _OrigemDestinoState extends State<OrigemDestino> {
           );
         });
 
-        // Chama o serviço para obter a localização com base no código escaneado
-        var resultado =
-            await _servicoLocalizacao.fetchLocalizacao(result.rawContent);
+        var resultado = await _servicoLocalizacao.fetchLocalizacao(result.rawContent);
 
-        // Cancela o timer se a resposta for recebida antes de exibir o loading
         if (timer != null && timer.isActive) {
           timer.cancel();
         }
 
-        // Fecha o diálogo de loading se ele estiver sendo exibido
         if (loadingExibido && Navigator.canPop(context)) {
           Navigator.of(context).pop();
         }
 
-        // Interpreta o status retornado pelo serviço
         switch (resultado['status']) {
           case StatusLocalizacao.sucesso:
             LocalizacaoModel localizacao = resultado['localizacao'];
@@ -173,43 +174,34 @@ class _OrigemDestinoState extends State<OrigemDestino> {
             }
             break;
           case StatusLocalizacao.timeout:
-            // Exibe o diálogo de erro imediatamente se o servidor não responder
-            _mostrarDialogoErro(context, 'Erro',
-                'O servidor não está respondendo no momento. Tente novamente mais tarde.');
+            _mostrarDialogoErro(context, 'Erro', 'O servidor não está respondendo no momento. Tente novamente mais tarde.');
             break;
           case StatusLocalizacao.semConexao:
-            _mostrarDialogoErro(context, 'Erro',
-                'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.');
+            _mostrarDialogoErro(context, 'Erro', 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.');
             break;
           case StatusLocalizacao.localizacaoNaoEncontrada:
-            _mostrarDialogoErro(
-                context, 'Atenção', 'Localização não encontrada.');
+            _mostrarDialogoErro(context, 'Atenção', 'Localização não encontrada.');
             break;
           case StatusLocalizacao.erroServidor:
           default:
-            _mostrarDialogoErro(context, 'Erro',
-                'Erro ao buscar dados da localização. Tente novamente mais tarde.');
+            _mostrarDialogoErro(context, 'Erro', 'Erro ao buscar dados da localização. Tente novamente mais tarde.');
             break;
         }
       }
     } catch (e) {
-      // Se ocorrer qualquer erro inesperado
       if (loadingExibido && Navigator.canPop(context)) {
         Navigator.of(context).pop();
       }
       _mostrarDialogoErro(context, 'Erro', e.toString().split(': ').last);
     } finally {
-      // Certifica-se de fechar o diálogo de loading antes de abrir o diálogo de erro
       if (loadingExibido && Navigator.canPop(context)) {
         Navigator.of(context).pop();
-        _mostrarDialogoErro(context, 'Erro',
-            'O servidor não está respondendo no momento. Tente novamente mais tarde.');
+        _mostrarDialogoErro(context, 'Erro', 'O servidor não está respondendo no momento. Tente novamente mais tarde.');
       }
     }
   }
 
-  void _mostrarDialogoErro(
-      BuildContext context, String titulo, String mensagem) {
+  void _mostrarDialogoErro(BuildContext context, String titulo, String mensagem) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

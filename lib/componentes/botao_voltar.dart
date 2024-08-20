@@ -11,6 +11,7 @@ class BotaoVoltar extends StatelessWidget {
     final movimentacaoProvider =
         Provider.of<MovimentacaoProvider>(context, listen: false);
     await movimentacaoProvider.limparEstadoAnterior();
+    await movimentacaoProvider.verificarERecarregarMovs();
     print(movimentacaoProvider.toString());
   }
 

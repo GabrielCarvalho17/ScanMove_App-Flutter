@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:AppEstoqueMP/provedores/usuario.dart';
-import 'package:AppEstoqueMP/componentes/alerta.dart';
 import 'package:AppEstoqueMP/servicos/autenticacao.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:AppEstoqueMP/componentes/alerta.dart';
+import 'package:AppEstoqueMP/provedores/usuario.dart'; // Importe o provedor de usuário
+import 'package:provider/provider.dart'; // Importe o Provider
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -55,12 +55,15 @@ class LoginState extends State<Login> {
         // Armazena o nome do usuário logado no SharedPreferences
         await _salvarUsuarioLogado(usuario);
 
-        await Provider.of<ProvUsuario>(context, listen: false).saveUser(
+        // Atualiza o provedor de usuário
+        final provUsuario = Provider.of<ProvUsuario>(context, listen: false);
+        await provUsuario.saveUser(
           usuario,
           autenticacao.accessToken,
           autenticacao.refreshToken,
         );
 
+        // Navega para a tela de histórico de movimentações
         Navigator.of(context).pushReplacementNamed('/hist_mov');
       } catch (e) {
         setState(() {
@@ -136,17 +139,17 @@ class LoginState extends State<Login> {
                       textStyle: const TextStyle(fontSize: 18),
                     ),
                     child:
-                        _isLoading // Exibe o indicador de carregamento ou o texto do botão
-                            ? SizedBox(
-                                width: 24.0,
-                                height: 24.0,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.0, // Tamanho reduzido
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
-                                ),
-                              )
-                            : const Text('Entrar'),
+                    _isLoading // Exibe o indicador de carregamento ou o texto do botão
+                        ? SizedBox(
+                      width: 24.0,
+                      height: 24.0,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0, // Tamanho reduzido
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white),
+                      ),
+                    )
+                        : const Text('Entrar'),
                   ),
                 ),
                 const SizedBox(height: 30),

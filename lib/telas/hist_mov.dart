@@ -1,3 +1,4 @@
+import 'package:AppEstoqueMP/modelos/movimentacao.dart';
 import 'package:AppEstoqueMP/provedores/movimentacao.dart';
 import 'package:flutter/material.dart';
 import 'package:AppEstoqueMP/componentes/movimentacao.dart';
@@ -6,8 +7,6 @@ import 'package:AppEstoqueMP/componentes/app_bar.dart';
 import 'package:AppEstoqueMP/componentes/botao_adicionar_mov.dart';
 import 'package:AppEstoqueMP/componentes/botao_sincronizar.dart';
 import 'package:AppEstoqueMP/componentes/botao_rolar_topo.dart';
-import 'package:AppEstoqueMP/servicos/movimentacao.dart';
-import 'package:AppEstoqueMP/modelos/movimentacao.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 import 'package:provider/provider.dart';
 
@@ -17,11 +16,9 @@ class HistMov extends StatefulWidget {
 }
 
 class _HistMovState extends State<HistMov> {
-  List<MovimentacaoModel> movimentacoes = [];
-  final ServMovimentacao servMovimentacao = ServMovimentacao();
-  bool isLoading = true;
   late ScrollController _scrollController;
   bool _showScrollToTopButton = false;
+  bool _isInitialLoad = true;
 
   @override
   void initState() {
@@ -33,35 +30,21 @@ class _HistMovState extends State<HistMov> {
           _showScrollToTopButton = _scrollController.offset > 200;
         });
       });
-
-    _carregarMovimentacoes();
   }
 
-  Future<void> _carregarMovimentacoes() async {
-    setState(() {
-      isLoading = true;
-    });
-
-    try {
-      final movimentacoesExistentes =
-          await servMovimentacao.getMovimentacoesExistentes();
-
-      if (movimentacoesExistentes.isEmpty) {
-        movimentacoes = await servMovimentacao.obterMovimentacoesDoServidor();
-      } else {
-        movimentacoes = movimentacoesExistentes;
-      }
-    } catch (e) {
-      print('Erro ao carregar movimentações: $e');
-    } finally {
-      setState(() {
-        isLoading = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isInitialLoad) {
+      _isInitialLoad = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final movimentacaoProvider = Provider.of<MovimentacaoProvider>(context, listen: false);
+        await movimentacaoProvider.verificarERecarregarMovs();
       });
     }
   }
 
-  Future<bool> _confirmDismiss(
-      BuildContext context, MovimentacaoModel mov) async {
+  Future<bool> _confirmDismiss(BuildContext context, MovimentacaoModel mov) async {
     if (mov.status == 'Finalizada') {
       await showDialog(
         context: context,
@@ -100,79 +83,75 @@ class _HistMovState extends State<HistMov> {
     return shouldDelete;
   }
 
-  Future<bool> _deletarMovimentacao(int movServidor) async {
-    bool retorno = await servMovimentacao.deletarMovimentoLocal(movServidor);
-    if (retorno) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return MediaQuery.removeViewInsets(
       removeBottom: true,
       context: context,
       child: Scaffold(
-        appBar: CustomAppBar(titleText: 'Histórico', customHeight: 70),
+        appBar: CustomAppBar(titleText: 'Histórico do dia', customHeight: 70),
         drawer: CustomDrawer(),
-        body: isLoading
-            ? Center(child: CircularProgressIndicator())
-            : movimentacoes.isEmpty
-                ? Center(child: Text('Nenhuma movimentação encontrada'))
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: EdgeInsets.only(top: 16, bottom: 80),
-                    itemCount: movimentacoes.length,
-                    itemBuilder: (context, index) {
-                      final mov = movimentacoes[index];
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/nova_mov',
-                            arguments: {
-                              'id': mov.movServidor,
-                            },
-                          );
-                        },
-                        child: Dismissible(
-                          key: Key(mov.movServidor.toString()),
-                          direction: DismissDirection.endToStart,
-                          confirmDismiss: (direction) async {
-                            if (direction == DismissDirection.endToStart) {
-                              return await _confirmDismiss(context, mov);
-                            }
-                            return false;
-                          },
-                          onDismissed: (direction) {
-                            if (direction == DismissDirection.endToStart) {
-                              setState(() {
-                                movimentacoes.removeAt(index);
-                              });
+        body: Consumer<MovimentacaoProvider>(
+          builder: (context, movimentacaoProvider, child) {
+            if (movimentacaoProvider.isLoading) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-                              _deletarMovimentacao(mov.movServidor);
-                            }
-                          },
-                          background: Container(
-                            color: Theme.of(context).colorScheme.primary,
-                            alignment: Alignment.centerRight,
-                            padding: EdgeInsets.symmetric(horizontal: 20.0),
-                            child: Icon(Icons.delete, color: Colors.white),
-                          ),
-                          child: MovimentacaoCard(
-                            id: mov.movServidor,
-                            data: DateTime.parse(mov.dataInicio),
-                            origem: mov.origem,
-                            destino: mov.destino,
-                            totalPecas: mov.totalPecas,
-                            usuario: mov.usuario,
-                            status: mov.status,
-                          ),
-                        ),
-                      );
-                    }),
+            if (movimentacaoProvider.movsDoDia.isEmpty) {
+              return Center(child: Text('Nenhuma movimentação encontrada'));
+            }
+
+            return ListView.builder(
+              controller: _scrollController,
+              padding: EdgeInsets.only(top: 16, bottom: 80),
+              itemCount: movimentacaoProvider.movsDoDia.length,
+              itemBuilder: (context, index) {
+                final mov = movimentacaoProvider.movsDoDia[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/nova_mov',
+                      arguments: {
+                        'id': mov.movServidor,
+                      },
+                    );
+                  },
+                  child: Dismissible(
+                    key: Key(mov.movServidor.toString()),
+                    direction: DismissDirection.endToStart,
+                    confirmDismiss: (direction) async {
+                      if (direction == DismissDirection.endToStart) {
+                        return await _confirmDismiss(context, mov);
+                      }
+                      return false;
+                    },
+                    onDismissed: (direction) async {
+                      if (direction == DismissDirection.endToStart) {
+                        await movimentacaoProvider.removerMovimentacao(mov.movServidor);
+                      }
+                    },
+                    background: Container(
+                      color: Theme.of(context).colorScheme.primary,
+                      alignment: Alignment.centerRight,
+                      padding: EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Icon(Icons.delete, color: Colors.white),
+                    ),
+                    child: MovimentacaoCard(
+                      id: mov.movServidor,
+                      data: DateTime.parse(mov.dataInicio),
+                      origem: mov.origem,
+                      destino: mov.destino,
+                      totalPecas: mov.totalPecas,
+                      usuario: mov.usuario,
+                      status: mov.status,
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
         floatingActionButton: Stack(
           children: [
             if (_showScrollToTopButton)
@@ -189,26 +168,9 @@ class _HistMovState extends State<HistMov> {
                 ),
               ),
             Positioned(
-              left: MediaQuery.of(context).size.width / 2 - 28,
-              bottom: 0,
-              child: BotaoSincronizar(
-                onPressed: () {
-                  print('Sincronizar!');
-                },
-                heroTag: 'uniqueSyncButton',
-              ),
-            ),
-            Positioned(
               right: 20,
               bottom: 0,
               child: BotaoAdicionarMov(
-                onPressed: () async {
-                  Navigator.pushNamed(context, '/nova_mov');
-                  final movimentacaoProvider =
-                      Provider.of<MovimentacaoProvider>(context, listen: false);
-                  await movimentacaoProvider.limparEstadoAnterior();
-                  print(movimentacaoProvider.toString());
-                },
                 heroTag: 'uniqueAddPecaButtonForNovaMov',
               ),
             ),

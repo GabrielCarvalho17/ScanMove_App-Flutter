@@ -1,19 +1,21 @@
 import 'package:AppEstoqueMP/modelos/peca.dart';
 
 class MovimentacaoModel {
+  final int? movSqlite; // Permitir que seja nulo inicialmente
   final int movServidor;
   final String dataInicio;
   final String dataModificacao;
-  final String status;
+  String status;
   final String usuario;
-  final String origem;
-  final String destino;
-  final int totalPecas;
-  final String filialOrigem;
-  final String filialDestino;
-  final List<PecaModel> pecas;
+  String origem;
+  String destino;
+  int totalPecas;
+  String filialOrigem;
+  String filialDestino;
+  List<PecaModel> pecas;
 
   MovimentacaoModel({
+    this.movSqlite,
     required this.movServidor,
     required this.dataInicio,
     required this.dataModificacao,
@@ -27,8 +29,39 @@ class MovimentacaoModel {
     required this.pecas,
   });
 
+  MovimentacaoModel copyWith({
+    int? movSqlite,
+    int? movServidor,
+    String? dataInicio,
+    String? dataModificacao,
+    String? status,
+    String? usuario,
+    String? origem,
+    String? destino,
+    int? totalPecas,
+    String? filialOrigem,
+    String? filialDestino,
+    List<PecaModel>? pecas,
+  }) {
+    return MovimentacaoModel(
+      movSqlite: movSqlite ?? this.movSqlite,
+      movServidor: movServidor ?? this.movServidor,
+      dataInicio: dataInicio ?? this.dataInicio,
+      dataModificacao: dataModificacao ?? this.dataModificacao,
+      status: status ?? this.status,
+      usuario: usuario ?? this.usuario,
+      origem: origem ?? this.origem,
+      destino: destino ?? this.destino,
+      totalPecas: totalPecas ?? this.totalPecas,
+      filialOrigem: filialOrigem ?? this.filialOrigem,
+      filialDestino: filialDestino ?? this.filialDestino,
+      pecas: pecas ?? this.pecas,
+    );
+  }
+
   factory MovimentacaoModel.fromJson(Map<String, dynamic> json) {
     return MovimentacaoModel(
+      movSqlite: json['mov_sqlite'],
       movServidor: json['movimentacao'],
       dataInicio: json['data_inicio'],
       dataModificacao: json['data_modificacao'],
@@ -47,6 +80,7 @@ class MovimentacaoModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'mov_sqlite': movSqlite,
       'movimentacao': movServidor,
       'data_inicio': dataInicio,
       'data_modificacao': dataModificacao,
