@@ -42,7 +42,7 @@ class BotaoAdicionarMov extends StatelessWidget {
     } else {
       // Se não houver movimentação em andamento, cria uma nova
       Navigator.pushNamed(context, '/nova_mov');
-      await movimentacaoProvider.limparEstadoAnterior();
+      await movimentacaoProvider.limparMovimentacaoAtual();
     }
   }
 

@@ -26,11 +26,16 @@ class ProvUsuario with ChangeNotifier {
     if (users.isNotEmpty) {
       // Atualiza o usuário existente
       final int userId = users.first['id'];
-      await _dbHelper.atualizar('USUARIO', userId, {
-        'username': username,
-        'access_token': token,
-        'refresh_token': refreshToken,
-      });
+      await _dbHelper.atualizar(
+        'USUARIO',
+        {
+          'username': username,
+          'access_token': token,
+          'refresh_token': refreshToken,
+        },
+        column: 'id',
+        valor: userId,
+      );
     } else {
       // Insere um novo usuário
       await _dbHelper.inserir('USUARIO', {
@@ -60,10 +65,15 @@ class ProvUsuario with ChangeNotifier {
     final List<Map<String, dynamic>> users = await _dbHelper.listar('USUARIO');
     if (users.isNotEmpty) {
       final int userId = users.first['id'];
-      await _dbHelper.atualizar('USUARIO', userId, {
-        'access_token': '',
-        'refresh_token': '',
-      });
+      await _dbHelper.atualizar(
+        'USUARIO',
+        {
+          'access_token': '',
+          'refresh_token': '',
+        },
+        column: 'id',
+        valor: userId,
+      );
       setUsername('');
       setToken('');
     }

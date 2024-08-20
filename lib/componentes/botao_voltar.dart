@@ -10,7 +10,6 @@ class BotaoVoltar extends StatelessWidget {
     Navigator.of(context).pop(); // Volta para a tela anterior
     final movimentacaoProvider =
         Provider.of<MovimentacaoProvider>(context, listen: false);
-    await movimentacaoProvider.limparEstadoAnterior();
     await movimentacaoProvider.verificarERecarregarMovs();
     print(movimentacaoProvider.toString());
   }

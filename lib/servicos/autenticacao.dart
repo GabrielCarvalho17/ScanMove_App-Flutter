@@ -32,11 +32,16 @@ class ServAutenticacao {
         );
 
         if (users.isNotEmpty) {
-          await _dbSqlite.atualizar('USUARIO', users.first['id'], {
-            'username': username,
-            'access_token': data['access'],
-            'refresh_token': data['refresh'],
-          });
+          await _dbSqlite.atualizar(
+            'USUARIO',
+            {
+              'username': username,
+              'access_token': data['access'],
+              'refresh_token': data['refresh'],
+            },
+            column: 'id',
+            valor: users.first['id'],
+          );
         } else {
           await _dbSqlite.inserir('USUARIO', {
             'username': username,
@@ -44,6 +49,7 @@ class ServAutenticacao {
             'refresh_token': data['refresh'],
           });
         }
+
 
         return Autenticacao.fromJson(data);
       } else {
@@ -80,9 +86,15 @@ class ServAutenticacao {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
-        await _dbSqlite.atualizar('USUARIO', users.first['id'], {
-          'access_token': data['access'],
-        });
+        await _dbSqlite.atualizar(
+          'USUARIO',
+          {
+            'access_token': data['access'],
+          },
+          column: 'id',
+          valor: users.first['id'],
+        );
+
       } else {
         final Map<String, dynamic> errorData = jsonDecode(utf8.decode(response.bodyBytes));
         throw Exception(errorData['detail'] ?? 'Falha ao atualizar token');
@@ -158,10 +170,16 @@ class ServAutenticacao {
       where: 'access_token IS NOT NULL AND access_token != ""',
     );
     if (users.isNotEmpty) {
-      await _dbSqlite.atualizar('USUARIO', users.first['id'], {
-        'access_token': '',
-        'refresh_token': '',
-      });
+      await _dbSqlite.atualizar(
+        'USUARIO',
+        {
+          'access_token': '',
+          'refresh_token': '',
+        },
+        column: 'id',
+        valor: users.first['id'],
+      );
+
     }
   }
 }

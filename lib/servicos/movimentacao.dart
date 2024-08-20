@@ -7,11 +7,11 @@ import 'package:AppEstoqueMP/servicos/sqlite.dart';
 import 'config.dart';
 
 class ServMovimentacao {
-  final SQLite _dbHelper = SQLite();
+  final SQLite _dbSqlite = SQLite();
 
   // Método para obter o token de um usuário com access_token válido
   Future<String?> _obterToken() async {
-    final List<Map<String, dynamic>> usuarios = await _dbHelper.listar(
+    final List<Map<String, dynamic>> usuarios = await _dbSqlite.listar(
       'USUARIO',
       where: 'access_token IS NOT NULL AND access_token != ""',
     );
@@ -57,7 +57,7 @@ class ServMovimentacao {
               .map((itemJson) => PecaModel.fromJson(itemJson))
               .toList();
 
-          int movSqlite = await _dbHelper.inserir('ESTOQUE_MAT_MOV', {
+          int movSqlite = await _dbSqlite.inserir('ESTOQUE_MAT_MOV', {
             'data_inicio': jsonMov['data_inicio'],
             'data_modificacao': jsonMov['data_modificacao'],
             'status': jsonMov['status'],
@@ -72,7 +72,7 @@ class ServMovimentacao {
 
           // Atualize as pecas com o movSqlite retornado e insira-os na base de dados local
           for (var peca in pecas) {
-            await _dbHelper.inserir('ESTOQUE_MAT_MOV_PECA', {
+            await _dbSqlite.inserir('ESTOQUE_MAT_MOV_PECA', {
               'peca': peca.peca,
               'material': peca.material,
               'cor_material': peca.corMaterial,
@@ -89,6 +89,7 @@ class ServMovimentacao {
 
           movimentacoes.add(MovimentacaoModel(
             movServidor: jsonMov['movimentacao'],
+            movSqlite: movSqlite,
             dataInicio: jsonMov['data_inicio'],
             dataModificacao: jsonMov['data_modificacao'],
             status: jsonMov['status'],
@@ -112,17 +113,18 @@ class ServMovimentacao {
   }
 
   Future<bool> deletarMovimentoLocal(int movServidor) async {
-    final int result = await _dbHelper.deletar('ESTOQUE_MAT_MOV', movServidor);
+    final int result = await _dbSqlite.deletar('ESTOQUE_MAT_MOV', movServidor);
     return result >
         0; // Retorna true se alguma linha foi deletada, caso contrário, false
   }
 
   Future<List<MovimentacaoModel>> getMovimentacoesExistentes() async {
-    final movimentacoesDb = await _dbHelper.listar('ESTOQUE_MAT_MOV');
+    final movimentacoesDb = await _dbSqlite.listar('ESTOQUE_MAT_MOV');
 
     return movimentacoesDb.map((mov) {
       return MovimentacaoModel(
         movServidor: mov['mov_servidor'],
+        movSqlite: mov['mov_sqlite'],
         dataInicio: mov['data_inicio'],
         dataModificacao: mov['data_modificacao'],
         status: mov['status'],
@@ -138,13 +140,14 @@ class ServMovimentacao {
   }
 
   Future<List<MovimentacaoModel>> getMovimentacoesDoSQLite() async {
-    final movimentacoesDb = await _dbHelper.listar('ESTOQUE_MAT_MOV');
+    print('getMovimentacoesDoSQLite');
+    final movimentacoesDb = await _dbSqlite.listar('ESTOQUE_MAT_MOV');
 
     List<MovimentacaoModel> movimentacoes = [];
 
     for (var mov in movimentacoesDb) {
       // Carrega as peças associadas à movimentação atual
-      final pecasDb = await _dbHelper.listar(
+      final pecasDb = await _dbSqlite.listar(
         'ESTOQUE_MAT_MOV_PECA',
         where: 'mov_sqlite = ?',
         whereArgs: [mov['mov_sqlite']],
@@ -166,7 +169,8 @@ class ServMovimentacao {
       }).toList();
 
       movimentacoes.add(MovimentacaoModel(
-        movServidor: mov['mov_servidor'],
+        movServidor: mov['mov_servidor']??0,
+        movSqlite: mov['mov_sqlite'],
         dataInicio: mov['data_inicio'],
         dataModificacao: mov['data_modificacao'],
         status: mov['status'],

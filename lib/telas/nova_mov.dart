@@ -58,10 +58,12 @@ class _NovaMovState extends State<NovaMov> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      movimentacaoProvider = Provider.of<MovimentacaoProvider>(context, listen: false);
+      movimentacaoProvider =
+          Provider.of<MovimentacaoProvider>(context, listen: false);
 
       if (widget.id != null) {
-        final movimentacao = movimentacaoProvider.getMovimentacaoPorId(widget.id!);
+        final movimentacao =
+            movimentacaoProvider.getMovimentacaoPorId(widget.id!);
         if (movimentacao != null) {
           movimentacaoProvider.setMovimentacaoAtual(movimentacao);
           statusFinalizada = movimentacao.status == 'Finalizada';
@@ -126,83 +128,89 @@ class _NovaMovState extends State<NovaMov> {
           children: [
             Expanded(child: Consumer<MovimentacaoProvider>(
                 builder: (context, movimentacaoProvider, child) {
-                  return ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.only(top: 16.0, bottom: 80),
-                    itemCount: movimentacaoProvider.movimentacaoAtual!.pecas.length,
-                    itemBuilder: (context, index) {
-                      final item = movimentacaoProvider.movimentacaoAtual!.pecas[index];
-                      return Dismissible(
-                        key: Key(item.peca.toString()),
-                        direction: DismissDirection.endToStart,
-                        confirmDismiss: (direction) async {
-                          if (direction == DismissDirection.endToStart) {
-                            await _mostrarDialogoExclusao(context, index);
-                            return false;
-                          }
+              if (movimentacaoProvider.movimentacaoAtual == null) {
+                return Container();
+              } else {
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.only(top: 16.0, bottom: 80),
+                  itemCount:
+                      movimentacaoProvider.movimentacaoAtual!.pecas.length,
+                  itemBuilder: (context, index) {
+                    final item =
+                        movimentacaoProvider.movimentacaoAtual!.pecas[index];
+                    return Dismissible(
+                      key: Key(item.peca.toString()),
+                      direction: DismissDirection.endToStart,
+                      confirmDismiss: (direction) async {
+                        if (direction == DismissDirection.endToStart) {
+                          await _mostrarDialogoExclusao(context, index);
                           return false;
-                        },
-                        background: Container(
-                          color: Theme.of(context).colorScheme.primary,
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Icon(Icons.delete, color: Colors.white),
-                            ),
+                        }
+                        return false;
+                      },
+                      background: Container(
+                        color: Theme.of(context).colorScheme.primary,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Icon(Icons.delete, color: Colors.white),
                           ),
                         ),
-                        child: Peca(
-                          peca: item.peca,
-                          partida: item.partida,
-                          material: item.material,
-                          descMaterial: item.descMaterial,
-                          cor: item.corMaterial,
-                          descCor: item.descCorMaterial,
-                          unidade: item.unidade,
-                          qtde: item.quantidade,
-                        ),
-                      );
-                    },
-                  );
-                })),
+                      ),
+                      child: Peca(
+                        peca: item.peca,
+                        partida: item.partida,
+                        material: item.material,
+                        descMaterial: item.descMaterial,
+                        cor: item.corMaterial,
+                        descCor: item.descCorMaterial,
+                        unidade: item.unidade,
+                        qtde: item.quantidade,
+                      ),
+                    );
+                  },
+                );
+              }
+            })),
           ],
         ),
         floatingActionButton: statusFinalizada
             ? null
             : Stack(
-          children: [
-            if (_showScrollToTopButton)
-              Positioned(
-                left: 20,
-                bottom: 0,
-                child: BotaoRolarTopo(
-                  onPressed: () {
-                    _scrollController.animateTo(
-                      0,
-                      duration: Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                  heroTag: 'uniqueScrollTopButtonForNovaMov',
-                ),
+                children: [
+                  if (_showScrollToTopButton)
+                    Positioned(
+                      left: 20,
+                      bottom: 0,
+                      child: BotaoRolarTopo(
+                        onPressed: () {
+                          _scrollController.animateTo(
+                            0,
+                            duration: Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        heroTag: 'uniqueScrollTopButtonForNovaMov',
+                      ),
+                    ),
+                  Positioned(
+                    left: MediaQuery.of(context).size.width / 2 - 28,
+                    bottom: 0,
+                    child: BotaoAdicionarPeca(
+                      heroTag: 'uniqueAddPecaButtonForNovaMov',
+                    ),
+                  ),
+                  Positioned(
+                    right: 20,
+                    bottom: 0,
+                    child: BotaoFinalizar(
+                      heroTag: 'uniqueEncerrarButtonForNovaMov',
+                    ),
+                  ),
+                ],
               ),
-            Positioned(
-              left: MediaQuery.of(context).size.width / 2 - 28,
-              bottom: 0,
-              child: BotaoAdicionarPeca(
-                heroTag: 'uniqueAddPecaButtonForNovaMov',
-              ),
-            ),
-            Positioned(
-              right: 20,
-              bottom: 0,
-              child: BotaoFinalizar(
-                heroTag: 'uniqueEncerrarButtonForNovaMov',
-              ),
-            ),
-          ],
-        ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );

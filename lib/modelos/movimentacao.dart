@@ -1,7 +1,7 @@
 import 'package:AppEstoqueMP/modelos/peca.dart';
 
 class MovimentacaoModel {
-  final int? movSqlite; // Permitir que seja nulo inicialmente
+  final int movSqlite; // Permitir que seja nulo inicialmente
   final int movServidor;
   final String dataInicio;
   final String dataModificacao;
@@ -15,7 +15,7 @@ class MovimentacaoModel {
   List<PecaModel> pecas;
 
   MovimentacaoModel({
-    this.movSqlite,
+    required this.movSqlite,
     required this.movServidor,
     required this.dataInicio,
     required this.dataModificacao,
@@ -94,4 +94,5 @@ class MovimentacaoModel {
       'pecas': pecas.map((item) => item.toJson()).toList(),
     };
   }
+
 }

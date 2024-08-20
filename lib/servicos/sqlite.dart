@@ -100,15 +100,17 @@ class SQLite {
     return resultado.isNotEmpty ? resultado.first : null;
   }
 
-  Future<int> atualizar(String tabela, int id, Map<String, dynamic> dados) async {
+  Future<int> atualizar(String tabela, Map<String, dynamic> dados,
+      {String column = 'id', dynamic valor}) async {
     final db = await bancoDados;
     return await db.update(
       tabela,
       dados,
-      where: 'id = ?',
-      whereArgs: [id],
+      where: '$column = ?',
+      whereArgs: [valor ?? dados['id']],
     );
   }
+
 
   Future<int> deletar(String tabela, int id, {String column = 'id'}) async {
     final db = await bancoDados;

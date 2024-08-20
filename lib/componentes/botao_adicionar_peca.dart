@@ -34,7 +34,8 @@ class BotaoAdicionarPeca extends StatelessWidget {
   }
 
   Future<void> _adicionarPeca(BuildContext context) async {
-    final movimentacaoProvider = Provider.of<MovimentacaoProvider>(context, listen: false);
+    final movimentacaoProvider =
+        Provider.of<MovimentacaoProvider>(context, listen: false);
     final servicoPeca = ServPeca();
     bool loadingExibido = false;
     Timer? timer;
@@ -70,7 +71,8 @@ class BotaoAdicionarPeca extends StatelessWidget {
         switch (resultado['status']) {
           case StatusPeca.sucesso:
             final peca = resultado['peca'];
-            movimentacaoProvider.adicionarPeca(peca.toJson());
+            await movimentacaoProvider.adicionarPeca(peca.toJson());
+            print(peca.toJson());
             print(movimentacaoProvider.toString());
             break;
           case StatusPeca.timeout:

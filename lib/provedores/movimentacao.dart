@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
@@ -12,23 +12,14 @@ class MovimentacaoProvider with ChangeNotifier {
 
   MovimentacaoModel? _movimentacaoAtual;
   List<MovimentacaoModel> _movsDoDia = [];
-  bool _isLoading = true;
+  bool _isLoading = false;
   String? _ultimaCarga;
 
-  // Getters para o estado atual e lista de movimentações
-  String? _usuarioAtual;
-  MovimentacaoModel? get movimentacaoAtual => _movimentacaoAtual;
   List<MovimentacaoModel> get movsDoDia => _movsDoDia;
   bool get isLoading => _isLoading;
-  String? get ultimaCarga => _ultimaCarga;
+  MovimentacaoModel? get movimentacaoAtual => _movimentacaoAtual;
 
-  // Verificar se o usuário está logado
-  Future<bool> _isUsuarioLogado() async {
-    final prefs = await SharedPreferences.getInstance();
-    _usuarioAtual = prefs.getString('usuario_logado');
-    return _usuarioAtual != null;
-  }
-
+  // Carregar as movimentações do dia
   Future<void> carregarMovsDoDia() async {
     _isLoading = true;
     notifyListeners();
@@ -92,7 +83,35 @@ class MovimentacaoProvider with ChangeNotifier {
     }
   }
 
-// Remover movimentação
+  // Verificar se o usuário está logado
+  Future<bool> _isUsuarioLogado() async {
+    final prefs = await SharedPreferences.getInstance();
+    final usuarioAtual = prefs.getString('usuario_logado');
+    return usuarioAtual != null;
+  }
+
+  // Cria uma nova movimentação
+  Future<void> novaMovimentacao() async {
+    final prefs = await SharedPreferences.getInstance();
+    final usuario_logado = prefs.getString('usuario_logado');
+    _movimentacaoAtual = MovimentacaoModel(
+      movSqlite: 0, // ou algum outro identificador padrão
+      movServidor: 0, // ou algum outro identificador padrão
+      dataInicio: DateTime.now().toIso8601String(),
+      dataModificacao: DateTime.now().toIso8601String(),
+      status: 'Inclusão',
+      usuario: usuario_logado!, // Substitua pelo usuário real
+      origem: '',
+      destino: '',
+      totalPecas: 0,
+      filialOrigem: '',
+      filialDestino: '',
+      pecas: [],
+    );
+    notifyListeners();
+  }
+
+  // Remover movimentação
   Future<void> removerMovimentacao(int movServidor) async {
     try {
       // Remover do banco de dados usando a coluna correta
@@ -110,125 +129,36 @@ class MovimentacaoProvider with ChangeNotifier {
     }
   }
 
-  // Definir movimentação atual
-  void setMovimentacaoAtual(MovimentacaoModel movimentacao) {
-    _movimentacaoAtual = movimentacao;
-    notifyListeners();
-  }
+  // Define a origem e valida contra o destino e peças
+  void setOrigem(String origem) {
+    if (_movimentacaoAtual == null) return;
 
-  Future<bool> permissaoGravar() async {
-    if (movimentacaoAtual == null) {
-      throw Exception('Nenhuma movimentação selecionada.');
-    }
-
-    final mov = movimentacaoAtual!;
-
-    if (mov.origem == null || mov.origem!.isEmpty) {
-      throw Exception('Forneça a origem.');
-    }
-    if (mov.destino == null || mov.destino!.isEmpty) {
-      throw Exception('Forneça o destino.');
-    }
-    if (mov.totalPecas <= 0 || mov.pecas.isEmpty) {
-      throw Exception('Adicione ao menos uma peça.');
-    }
-    if (mov.status == 'Finalizada') {
-      throw Exception('A movimentação já foi finalizada.');
-    }
-    if (mov.status != 'Andamento') {
-      print(mov.status);
-      return true; // Permitir gravar e finalizar
-    }
-
-    return false; // Não permitir gravar e finalizar
-  }
-
-  Future<void> gravarFinalizar() async {
-    if (movimentacaoAtual == null) {
-      throw Exception('Nenhuma movimentação selecionada.');
-    }
-
-    final mov = movimentacaoAtual!;
-
-    // Persistir a movimentação no banco de dados
-    final db = await _sqlite.bancoDados;
-    final movimentacaoMap = {
-      'data_inicio': mov.dataInicio,
-      'data_modificacao': mov.dataModificacao,
-      'status': 'Andamento',
-      'usuario': mov.usuario,
-      'origem': mov.origem,
-      'destino': mov.destino,
-      'total_pecas': mov.totalPecas,
-      'mov_servidor': mov.movServidor,
-      'filial_origem': mov.filialOrigem,
-      'filial_destino': mov.filialDestino,
-    };
-
-    int movSqliteId = await db.insert('ESTOQUE_MAT_MOV', movimentacaoMap);
-
-    // Persistir as peças associadas à movimentação
-    for (var peca in mov.pecas) {
-      final pecaMap = {
-        'peca': peca.peca,
-        'material': peca.material,
-        'cor_material': peca.corMaterial,
-        'partida': peca.partida,
-        'unidade': peca.unidade,
-        'quantidade': peca.quantidade,
-        'mov_sqlite': movSqliteId,
-        'desc_material': peca.descMaterial,
-        'desc_cor_material': peca.descCorMaterial,
-        'localizacao': peca.localizacao,
-        'filial': peca.filial,
-      };
-
-      await db.insert('ESTOQUE_MAT_MOV_PECA', pecaMap);
-    }
-
-    // Atualizar o estado da movimentação
-    _movimentacaoAtual = mov.copyWith(movSqlite: movSqliteId);
-    notifyListeners();
-  }
-
-  MovimentacaoModel? getMovimentacaoPorId(int id) {
-    try {
-      return _movsDoDia.firstWhere(
-        (mov) => mov.movServidor == id || mov.movSqlite == id,
-      );
-    } catch (e) {
-      return null;
-    }
-  }
-
-  void setOrigem(String? origem) {
-    if (movimentacaoAtual == null) return;
-
-    if (origem == movimentacaoAtual!.destino) {
+    if (origem == _movimentacaoAtual!.destino) {
       throw Exception('A origem não pode ser igual ao destino.');
     }
 
-    if (movimentacaoAtual!.pecas.isNotEmpty) {
+    if (_movimentacaoAtual!.pecas.isNotEmpty) {
       final localizacaoPrimeiraPeca =
-          movimentacaoAtual!.pecas.first.localizacao;
+          _movimentacaoAtual!.pecas.first.localizacao;
       if (origem != localizacaoPrimeiraPeca) {
         throw Exception(
             'A origem não pode ser diferente da localização atual das peças.');
       }
     }
 
-    _movimentacaoAtual = movimentacaoAtual!.copyWith(origem: origem);
+    _movimentacaoAtual = _movimentacaoAtual!.copyWith(origem: origem);
     notifyListeners();
   }
 
-  void setDestino(String? destino) {
-    if (movimentacaoAtual == null) return;
+  // Define o destino e valida contra a origem
+  void setDestino(String destino) {
+    // if (_movimentacaoAtual == null) return;
 
-    if (destino == movimentacaoAtual!.origem) {
+    if (destino == _movimentacaoAtual!.origem) {
       throw Exception('O destino não pode ser igual à origem.');
     }
 
-    _movimentacaoAtual = movimentacaoAtual!.copyWith(destino: destino);
+    _movimentacaoAtual = _movimentacaoAtual!.copyWith(destino: destino);
     notifyListeners();
   }
 
@@ -248,38 +178,162 @@ class MovimentacaoProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void adicionarPeca(Map<String, dynamic> pecaMap) {
-    if (movimentacaoAtual == null) return;
+  // Adiciona uma peça à movimentação e valida
+  Future<void> adicionarPeca(Map<String, dynamic> pecaMap) async {
+    print(_movimentacaoAtual?.status);
 
-    // Converte o mapa para uma instância de PecaModel
-    final novaPeca = PecaModel.fromJson(pecaMap);
+    if (_movimentacaoAtual == null) return;
 
-    // Verifica se a origem foi definida e se a localização da peça corresponde à origem
-    if (movimentacaoAtual!.origem != null &&
-        movimentacaoAtual!.origem!.isNotEmpty &&
-        movimentacaoAtual!.origem != novaPeca.localizacao) {
-      throw Exception(
-          'A peça não pertence a essa origem. \nA peça está em "${novaPeca.localizacao}".');
+    if (_movimentacaoAtual!.status == 'Inclusão') {
+      // Operar apenas a nível de instância
+      if (_movimentacaoAtual!.origem.isNotEmpty &&
+          _movimentacaoAtual!.origem != pecaMap['localizacao']) {
+        throw Exception(
+            'A peça não pertence a essa origem. \nA peça está em "${pecaMap['localizacao']}".');
+      }
+
+      if (_movimentacaoAtual!.pecas.any((p) => p.peca == pecaMap['peca'])) {
+        throw Exception('A peça já foi adicionada.');
+      }
+
+      _movimentacaoAtual = _movimentacaoAtual!.copyWith(
+        pecas: [..._movimentacaoAtual!.pecas, PecaModel.fromJson(pecaMap)],
+        totalPecas: _movimentacaoAtual!.totalPecas + 1,
+      );
+
+    } else if (_movimentacaoAtual!.status == 'Andamento') {
+      // Operar a nível de instância e banco de dados
+      if (_movimentacaoAtual!.origem.isNotEmpty &&
+          _movimentacaoAtual!.origem != pecaMap['localizacao']) {
+        throw Exception(
+            'A peça não pertence a essa origem. \nA peça está em "${pecaMap['localizacao']}".');
+      }
+
+      if (_movimentacaoAtual!.pecas.any((p) => p.peca == pecaMap['peca'])) {
+        throw Exception('A peça já foi adicionada.');
+      }
+
+      _movimentacaoAtual = _movimentacaoAtual!.copyWith(
+        pecas: [..._movimentacaoAtual!.pecas, PecaModel.fromJson(pecaMap)],
+        totalPecas: _movimentacaoAtual!.totalPecas + 1,
+      );
+
+      // Operações de banco de dados
+      pecaMap['mov_sqlite'] = _movimentacaoAtual?.movSqlite;
+
+      await _sqlite.inserir('ESTOQUE_MAT_MOV_PECA', pecaMap);
+
+      await _sqlite.atualizar(
+        'ESTOQUE_MAT_MOV',
+        {'total_pecas': movimentacaoAtual!.pecas.length},
+        column: (movimentacaoAtual!.movServidor != null && movimentacaoAtual!.movServidor != 0)
+            ? 'mov_servidor'
+            : 'mov_sqlite',
+        valor: (movimentacaoAtual!.movServidor != null && movimentacaoAtual!.movServidor != 0)
+            ? movimentacaoAtual!.movServidor
+            : movimentacaoAtual!.movSqlite,
+      );
+
+
+
+      movimentacaoAtual?.totalPecas = movimentacaoAtual!.pecas.length;
     }
-
-    if (movimentacaoAtual!.pecas.any((p) => p.peca == novaPeca.peca)) {
-      throw Exception('A peça já foi adicionada.');
-    }
-
-    _movimentacaoAtual = movimentacaoAtual!.copyWith(
-      pecas: [...movimentacaoAtual!.pecas, novaPeca],
-      totalPecas: movimentacaoAtual!.totalPecas + 1,
-    );
 
     notifyListeners();
+  }
 
-    // Persistir a adição da peça no banco de dados se necessário
-    if (_movimentacaoAtual!.movSqlite != null) {
-      _sqlite.inserir('ESTOQUE_MAT_MOV_PECA', {
-        ...pecaMap,
-        'mov_sqlite': _movimentacaoAtual!.movSqlite,
-      });
+  // Salva a movimentação (pode ser usada para mover para status "Andamento")
+  Future<void> salvarMovimentacao() async {
+    if (_movimentacaoAtual != null) {
+      if (_movimentacaoAtual!.movServidor == 0) {
+        _movimentacaoAtual = _movimentacaoAtual!
+            .copyWith(movServidor: _movsDoDia.length + 1, status: 'Andamento');
+        _movsDoDia.add(_movimentacaoAtual!);
+      }
+      final mov = movimentacaoAtual!;
+      // Log dos dados da movimentação antes de gravar
+      print('Dados da movimentação antes de gravar: ${mov.toString()}');
+
+      final db = await _sqlite.bancoDados;
+      final movimentacaoMap = {
+        'data_inicio': mov.dataInicio,
+        'data_modificacao': mov.dataModificacao,
+        'status': mov.status,
+        'usuario': mov.usuario,
+        'origem': mov.origem,
+        'destino': mov.destino,
+        'total_pecas': mov.totalPecas,
+        'filial_origem': mov.filialOrigem,
+        'filial_destino': mov.filialDestino,
+      };
+
+      // Inserir a movimentação no banco de dados e obter o ID gerado
+      int movSqliteId = await db.insert('ESTOQUE_MAT_MOV', movimentacaoMap);
+      print('ID da movimentação no SQLite: $movSqliteId');
+
+      // Persistir as peças associadas à movimentação
+      for (var peca in mov.pecas) {
+        final pecaMap = {
+          'peca': peca.peca,
+          'material': peca.material,
+          'cor_material': peca.corMaterial,
+          'partida': peca.partida,
+          'unidade': peca.unidade,
+          'quantidade': peca.quantidade,
+          'mov_sqlite': movSqliteId,
+          'desc_material': peca.descMaterial,
+          'desc_cor_material': peca.descCorMaterial,
+          'localizacao': peca.localizacao,
+          'filial': peca.filial,
+        };
+
+        await db.insert('ESTOQUE_MAT_MOV_PECA', pecaMap);
+      }
+      notifyListeners();
     }
+  }
+
+// Finaliza a movimentação
+  Future<void> finalizarMovimentacao() async {
+    if (_movimentacaoAtual != null && _movimentacaoAtual!.status == 'Andamento') {
+      _movimentacaoAtual = _movimentacaoAtual!.copyWith(
+        status: 'Finalizada',
+        dataModificacao: DateTime.now().toIso8601String(),
+      );
+
+      await _sqlite.atualizar(
+        'ESTOQUE_MAT_MOV',
+        {'status': 'Finalizada'},
+        column: (movimentacaoAtual!.movServidor != null && movimentacaoAtual!.movServidor != 0)
+            ? 'mov_servidor'
+            : 'mov_sqlite',
+        valor: (movimentacaoAtual!.movServidor != null && movimentacaoAtual!.movServidor != 0)
+            ? movimentacaoAtual!.movServidor
+            : movimentacaoAtual!.movSqlite,
+      );
+
+      print(movimentacaoAtual?.movServidor);
+      notifyListeners();
+    }
+  }
+
+
+  // Método para buscar uma movimentação por ID
+  MovimentacaoModel? getMovimentacaoPorId(int id) {
+    try {
+      return _movsDoDia.firstWhere(
+        (mov) => mov.movServidor == id || mov.movSqlite == id,
+      );
+    } catch (e) {
+      print('Movimentação com ID $id não encontrada: $e');
+      return null;
+    }
+  }
+
+  // Método para definir a movimentação atual
+  void setMovimentacaoAtual(MovimentacaoModel movimentacao) {
+    _movimentacaoAtual = movimentacao;
+    notifyListeners();
   }
 
   void removerPeca(String pecaId) {
@@ -290,44 +344,43 @@ class MovimentacaoProvider with ChangeNotifier {
             .toList(),
         totalPecas: _movimentacaoAtual!.totalPecas - 1,
       );
+      notifyListeners();
+    } else {
+      throw Exception('Nenhuma movimentação atual está selecionada.');
+    }
+  }
+
+  Future<bool> permissaoGravar() async {
+    if (movimentacaoAtual == null) {
+      throw Exception('Nenhuma movimentação selecionada.');
     }
 
-    notifyListeners();
+    final mov = movimentacaoAtual!;
+
+    if (mov.origem.isEmpty) {
+      throw Exception('Forneça a origem.');
+    }
+    if (mov.destino.isEmpty) {
+      throw Exception('Forneça o destino.');
+    }
+    if (mov.totalPecas <= 0 || mov.pecas.isEmpty) {
+      throw Exception('Adicione ao menos uma peça.');
+    }
+    if (mov.status == 'Finalizada') {
+      throw Exception('A movimentação já foi finalizada.');
+    }
+
+    // Permitir gravar e finalizar se o status for 'Andamento'
+    if (mov.status == 'Andamento') {
+      return true;
+    }
+
+    return true; // Permitir gravar e finalizar em outros estados
   }
 
-  // Limpar o estado atual
-  Future<void> limparEstadoAnterior() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    String? usuario = prefs.getString('usuario_logado');
-    _movimentacaoAtual = MovimentacaoModel(
-      movServidor: 0,
-      dataInicio: DateTime.now().toIso8601String(),
-      dataModificacao: DateTime.now().toIso8601String(),
-      status: 'Inclusão',
-      usuario: usuario ?? '',
-      origem: '',
-      destino: '',
-      totalPecas: 0,
-      filialOrigem: '',
-      filialDestino: '',
-      pecas: [],
-    );
-
+  // Limpar o estado atual da movimentação
+  Future<void> limparMovimentacaoAtual() async {
+    await novaMovimentacao();
     notifyListeners();
-  }
-
-  @override
-  String toString() {
-    String dataAtual = DateFormat('dd-MM-yyyy').format(DateTime.now());
-    return '''
-Movimentacao Atual {
-  Usuario Atual: $_usuarioAtual,
-  Últ. Carga: $_ultimaCarga,
-  Data Atual: $dataAtual,
-  Movimentação: $_movimentacaoAtual,
-  Movs do Dia: $_movsDoDia
-}
-''';
   }
 }
