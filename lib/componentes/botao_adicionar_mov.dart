@@ -12,7 +12,7 @@ class BotaoAdicionarMov extends StatelessWidget {
   // Método que realiza as ações desejadas
   void _adicionarMovimentacao(BuildContext context) async {
     final movimentacaoProvider =
-        Provider.of<MovimentacaoProvider>(context, listen: false);
+        Provider.of<ProvMovimentacao>(context, listen: false);
 
     // Tenta encontrar uma movimentação com status 'Andamento'
     MovimentacaoModel? movAndamento;

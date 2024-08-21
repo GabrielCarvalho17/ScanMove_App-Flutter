@@ -9,7 +9,7 @@ class BotaoVoltar extends StatelessWidget {
     // Removida a lógica de provedor e SQLite
     Navigator.of(context).pop(); // Volta para a tela anterior
     final movimentacaoProvider =
-        Provider.of<MovimentacaoProvider>(context, listen: false);
+        Provider.of<ProvMovimentacao>(context, listen: false);
     await movimentacaoProvider.verificarERecarregarMovs();
     print(movimentacaoProvider.toString());
   }

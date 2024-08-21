@@ -24,7 +24,7 @@ class _NovaMovState extends State<NovaMov> {
   late ScrollController _scrollController;
   bool _showScrollToTopButton = false;
   bool _isInitialized = false;
-  late MovimentacaoProvider movimentacaoProvider;
+  late ProvMovimentacao movimentacaoProvider;
   bool statusFinalizada = false;
 
   @override
@@ -59,7 +59,7 @@ class _NovaMovState extends State<NovaMov> {
     super.didChangeDependencies();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       movimentacaoProvider =
-          Provider.of<MovimentacaoProvider>(context, listen: false);
+          Provider.of<ProvMovimentacao>(context, listen: false);
 
       if (widget.id != null) {
         final movimentacao =
@@ -126,7 +126,7 @@ class _NovaMovState extends State<NovaMov> {
         drawer: CustomDrawer(),
         body: Column(
           children: [
-            Expanded(child: Consumer<MovimentacaoProvider>(
+            Expanded(child: Consumer<ProvMovimentacao>(
                 builder: (context, movimentacaoProvider, child) {
               if (movimentacaoProvider.movimentacaoAtual == null) {
                 return Container();

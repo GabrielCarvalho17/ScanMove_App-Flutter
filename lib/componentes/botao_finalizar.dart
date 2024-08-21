@@ -27,7 +27,7 @@ class BotaoFinalizar extends StatelessWidget {
   }
 
   Future<void> _finalizarMovimentacao(BuildContext context) async {
-    final movimentacaoProvider = Provider.of<MovimentacaoProvider>(context, listen: false);
+    final movimentacaoProvider = Provider.of<ProvMovimentacao>(context, listen: false);
     final movimentacaoAtual = movimentacaoProvider.movimentacaoAtual;
 
     if (movimentacaoAtual == null) {

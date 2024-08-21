@@ -38,7 +38,7 @@ class _HistMovState extends State<HistMov> {
       _isInitialLoad = false;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         final movimentacaoProvider =
-            Provider.of<MovimentacaoProvider>(context, listen: false);
+            Provider.of<ProvMovimentacao>(context, listen: false);
         await movimentacaoProvider.verificarERecarregarMovs();
       });
     }
@@ -92,7 +92,7 @@ class _HistMovState extends State<HistMov> {
       child: Scaffold(
         appBar: CustomAppBar(titleText: 'Histórico do dia', customHeight: 70),
         drawer: CustomDrawer(),
-        body: Consumer<MovimentacaoProvider>(
+        body: Consumer<ProvMovimentacao>(
           builder: (context, movimentacaoProvider, child) {
             if (movimentacaoProvider.isLoading) {
               return Center(child: CircularProgressIndicator());
@@ -132,7 +132,7 @@ class _HistMovState extends State<HistMov> {
                     onDismissed: (direction) async {
                       if (direction == DismissDirection.endToStart) {
                         final movimentacaoProvider =
-                            Provider.of<MovimentacaoProvider>(context,
+                            Provider.of<ProvMovimentacao>(context,
                                 listen: false);
 
                         // Remova a movimentação da lista de movimentações visíveis

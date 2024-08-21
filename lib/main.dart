@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: provUsuario),
-        ChangeNotifierProvider(create: (_) => MovimentacaoProvider()),  // Adiciona o MovimentacaoProvider
+        ChangeNotifierProvider(create: (_) => ProvMovimentacao()),  // Adiciona o MovimentacaoProvider
       ],
       child: MaterialApp(
         title: 'App Estudo',

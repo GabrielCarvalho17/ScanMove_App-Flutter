@@ -18,13 +18,13 @@ class OrigemDestino extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _OrigemDestinoState extends State<OrigemDestino> {
-  late MovimentacaoProvider movimentacaoProvider;
+  late ProvMovimentacao movimentacaoProvider;
   final ServLocalizacao _servicoLocalizacao = ServLocalizacao();
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    movimentacaoProvider = Provider.of<MovimentacaoProvider>(context);
+    movimentacaoProvider = Provider.of<ProvMovimentacao>(context);
   }
 
   @override

@@ -6,7 +6,7 @@ import 'package:AppEstoqueMP/servicos/movimentacao.dart';
 import 'package:AppEstoqueMP/modelos/movimentacao.dart';
 import 'package:AppEstoqueMP/modelos/peca.dart';
 
-class MovimentacaoProvider with ChangeNotifier {
+class ProvMovimentacao with ChangeNotifier {
   final SQLite _sqlite = SQLite();
   final ServMovimentacao _servMovimentacao = ServMovimentacao();
 

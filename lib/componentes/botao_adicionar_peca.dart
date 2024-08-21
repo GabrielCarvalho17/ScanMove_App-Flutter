@@ -35,7 +35,7 @@ class BotaoAdicionarPeca extends StatelessWidget {
 
   Future<void> _adicionarPeca(BuildContext context) async {
     final movimentacaoProvider =
-        Provider.of<MovimentacaoProvider>(context, listen: false);
+        Provider.of<ProvMovimentacao>(context, listen: false);
     final servicoPeca = ServPeca();
     bool loadingExibido = false;
     Timer? timer;

@@ -74,7 +74,7 @@ class ServLocalizacao {
 
     // Obter o token do primeiro usuário encontrado
     String token = users.first['access_token'];
-    final url = Uri.parse('${Config.baseUrl}/materiais/localizacoes/$localizacao/');
+    final url = Uri.parse('${Config.baseUrl}/materiais/localizacao/$localizacao/');
 
     // Fazer a requisição à API
     return await http.get(
