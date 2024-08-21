@@ -115,8 +115,10 @@ class MovimentacaoProvider with ChangeNotifier {
   Future<void> removerMovimentacao(int movServidor) async {
     try {
       // Remover do banco de dados usando a coluna correta
-      await _sqlite.deletar('ESTOQUE_MAT_MOV', movServidor,
-          column: 'mov_servidor');
+      await _sqlite.deletar(
+        tabela: 'ESTOQUE_MAT_MOV',
+        id: {'mov_servidor': movServidor},
+      );
 
       // Remover do provedor (lista de movimentações do dia)
       _movsDoDia.removeWhere((mov) => mov.movServidor == movServidor);
@@ -178,70 +180,6 @@ class MovimentacaoProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Adiciona uma peça à movimentação e valida
-  Future<void> adicionarPeca(Map<String, dynamic> pecaMap) async {
-    print(_movimentacaoAtual?.status);
-
-    if (_movimentacaoAtual == null) return;
-
-    if (_movimentacaoAtual!.status == 'Inclusão') {
-      // Operar apenas a nível de instância
-      if (_movimentacaoAtual!.origem.isNotEmpty &&
-          _movimentacaoAtual!.origem != pecaMap['localizacao']) {
-        throw Exception(
-            'A peça não pertence a essa origem. \nA peça está em "${pecaMap['localizacao']}".');
-      }
-
-      if (_movimentacaoAtual!.pecas.any((p) => p.peca == pecaMap['peca'])) {
-        throw Exception('A peça já foi adicionada.');
-      }
-
-      _movimentacaoAtual = _movimentacaoAtual!.copyWith(
-        pecas: [..._movimentacaoAtual!.pecas, PecaModel.fromJson(pecaMap)],
-        totalPecas: _movimentacaoAtual!.totalPecas + 1,
-      );
-
-    } else if (_movimentacaoAtual!.status == 'Andamento') {
-      // Operar a nível de instância e banco de dados
-      if (_movimentacaoAtual!.origem.isNotEmpty &&
-          _movimentacaoAtual!.origem != pecaMap['localizacao']) {
-        throw Exception(
-            'A peça não pertence a essa origem. \nA peça está em "${pecaMap['localizacao']}".');
-      }
-
-      if (_movimentacaoAtual!.pecas.any((p) => p.peca == pecaMap['peca'])) {
-        throw Exception('A peça já foi adicionada.');
-      }
-
-      _movimentacaoAtual = _movimentacaoAtual!.copyWith(
-        pecas: [..._movimentacaoAtual!.pecas, PecaModel.fromJson(pecaMap)],
-        totalPecas: _movimentacaoAtual!.totalPecas + 1,
-      );
-
-      // Operações de banco de dados
-      pecaMap['mov_sqlite'] = _movimentacaoAtual?.movSqlite;
-
-      await _sqlite.inserir('ESTOQUE_MAT_MOV_PECA', pecaMap);
-
-      await _sqlite.atualizar(
-        'ESTOQUE_MAT_MOV',
-        {'total_pecas': movimentacaoAtual!.pecas.length},
-        column: (movimentacaoAtual!.movServidor != null && movimentacaoAtual!.movServidor != 0)
-            ? 'mov_servidor'
-            : 'mov_sqlite',
-        valor: (movimentacaoAtual!.movServidor != null && movimentacaoAtual!.movServidor != 0)
-            ? movimentacaoAtual!.movServidor
-            : movimentacaoAtual!.movSqlite,
-      );
-
-
-
-      movimentacaoAtual?.totalPecas = movimentacaoAtual!.pecas.length;
-    }
-
-    notifyListeners();
-  }
-
   // Salva a movimentação (pode ser usada para mover para status "Andamento")
   Future<void> salvarMovimentacao() async {
     if (_movimentacaoAtual != null) {
@@ -295,7 +233,8 @@ class MovimentacaoProvider with ChangeNotifier {
 
 // Finaliza a movimentação
   Future<void> finalizarMovimentacao() async {
-    if (_movimentacaoAtual != null && _movimentacaoAtual!.status == 'Andamento') {
+    if (_movimentacaoAtual != null &&
+        _movimentacaoAtual!.status == 'Andamento') {
       _movimentacaoAtual = _movimentacaoAtual!.copyWith(
         status: 'Finalizada',
         dataModificacao: DateTime.now().toIso8601String(),
@@ -304,10 +243,12 @@ class MovimentacaoProvider with ChangeNotifier {
       await _sqlite.atualizar(
         'ESTOQUE_MAT_MOV',
         {'status': 'Finalizada'},
-        column: (movimentacaoAtual!.movServidor != null && movimentacaoAtual!.movServidor != 0)
+        column: (movimentacaoAtual!.movServidor != null &&
+                movimentacaoAtual!.movServidor != 0)
             ? 'mov_servidor'
             : 'mov_sqlite',
-        valor: (movimentacaoAtual!.movServidor != null && movimentacaoAtual!.movServidor != 0)
+        valor: (movimentacaoAtual!.movServidor != null &&
+                movimentacaoAtual!.movServidor != 0)
             ? movimentacaoAtual!.movServidor
             : movimentacaoAtual!.movSqlite,
       );
@@ -316,7 +257,6 @@ class MovimentacaoProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-
 
   // Método para buscar uma movimentação por ID
   MovimentacaoModel? getMovimentacaoPorId(int id) {
@@ -336,18 +276,114 @@ class MovimentacaoProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void removerPeca(String pecaId) {
-    if (_movimentacaoAtual != null) {
+  // Adiciona uma peça à movimentação e valida
+  Future<void> adicionarPeca(Map<String, dynamic> pecaMap) async {
+    print(_movimentacaoAtual?.status);
+
+    if (_movimentacaoAtual == null) return;
+
+    if (_movimentacaoAtual!.status == 'Inclusão') {
+      // Operar apenas a nível de instância
+      if (_movimentacaoAtual!.origem.isNotEmpty &&
+          _movimentacaoAtual!.origem != pecaMap['localizacao']) {
+        throw Exception(
+            'A peça não pertence a essa origem. \nA peça está em "${pecaMap['localizacao']}".');
+      }
+
+      if (_movimentacaoAtual!.pecas.any((p) => p.peca == pecaMap['peca'])) {
+        throw Exception('A peça já foi adicionada.');
+      }
+
+      _movimentacaoAtual = _movimentacaoAtual!.copyWith(
+        pecas: [..._movimentacaoAtual!.pecas, PecaModel.fromJson(pecaMap)],
+        totalPecas: _movimentacaoAtual!.totalPecas + 1,
+      );
+    } else if (_movimentacaoAtual!.status == 'Andamento') {
+      // Operar a nível de instância e banco de dados
+      if (_movimentacaoAtual!.origem.isNotEmpty &&
+          _movimentacaoAtual!.origem != pecaMap['localizacao']) {
+        throw Exception(
+            'A peça não pertence a essa origem. \nA peça está em "${pecaMap['localizacao']}".');
+      }
+
+      if (_movimentacaoAtual!.pecas.any((p) => p.peca == pecaMap['peca'])) {
+        throw Exception('A peça já foi adicionada.');
+      }
+
+      _movimentacaoAtual = _movimentacaoAtual!.copyWith(
+        pecas: [..._movimentacaoAtual!.pecas, PecaModel.fromJson(pecaMap)],
+        totalPecas: _movimentacaoAtual!.totalPecas + 1,
+      );
+
+      // Operações de banco de dados
+      pecaMap['mov_sqlite'] = _movimentacaoAtual?.movSqlite;
+
+      await _sqlite.inserir('ESTOQUE_MAT_MOV_PECA', pecaMap);
+
+      await _sqlite.atualizar(
+        'ESTOQUE_MAT_MOV',
+        {'total_pecas': movimentacaoAtual!.pecas.length},
+        column: (movimentacaoAtual!.movServidor != null &&
+                movimentacaoAtual!.movServidor != 0)
+            ? 'mov_servidor'
+            : 'mov_sqlite',
+        valor: (movimentacaoAtual!.movServidor != null &&
+                movimentacaoAtual!.movServidor != 0)
+            ? movimentacaoAtual!.movServidor
+            : movimentacaoAtual!.movSqlite,
+      );
+
+      movimentacaoAtual?.totalPecas = movimentacaoAtual!.pecas.length;
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> removerPeca(String pecaId) async {
+    print(_movimentacaoAtual?.status);
+
+    if (_movimentacaoAtual == null) return;
+
+    if (_movimentacaoAtual!.status == 'Inclusão') {
       _movimentacaoAtual = _movimentacaoAtual!.copyWith(
         pecas: _movimentacaoAtual!.pecas
             .where((peca) => peca.peca != pecaId)
             .toList(),
         totalPecas: _movimentacaoAtual!.totalPecas - 1,
       );
-      notifyListeners();
-    } else {
-      throw Exception('Nenhuma movimentação atual está selecionada.');
+    } else if (_movimentacaoAtual?.status == 'Andamento') {
+
+      movimentacaoAtual?.totalPecas = movimentacaoAtual!.pecas.length;
+
+      _movimentacaoAtual = _movimentacaoAtual!.copyWith(
+        pecas: _movimentacaoAtual!.pecas
+            .where((peca) => peca.peca != pecaId)
+            .toList(),
+        totalPecas: _movimentacaoAtual!.totalPecas - 1,
+      );
+
+
+      await _sqlite.deletar(
+        tabela: 'ESTOQUE_MAT_MOV_PECA',
+        id: {'peca': pecaId},  // Mapa para o ID
+        fk: {'mov_sqlite': movimentacaoAtual!.movSqlite},  // Mapa opcional para a FK
+      );
+
+      await _sqlite.atualizar(
+        'ESTOQUE_MAT_MOV',
+        {'total_pecas': movimentacaoAtual!.pecas.length},
+        column: (movimentacaoAtual!.movServidor != null &&
+            movimentacaoAtual!.movServidor != 0)
+            ? 'mov_servidor'
+            : 'mov_sqlite',
+        valor: (movimentacaoAtual!.movServidor != null &&
+            movimentacaoAtual!.movServidor != 0)
+            ? movimentacaoAtual!.movServidor
+            : movimentacaoAtual!.movSqlite,
+      );
+
     }
+    notifyListeners();
   }
 
   Future<bool> permissaoGravar() async {

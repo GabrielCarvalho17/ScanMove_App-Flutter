@@ -29,42 +29,42 @@ class SQLite {
       onCreate: (db, version) async {
         await db.execute(
           'CREATE TABLE USUARIO('
-              'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-              'username VARCHAR(25) NOT NULL,'
-              'access_token TEXT,'
-              'refresh_token TEXT)',
+          'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+          'username VARCHAR(25) NOT NULL,'
+          'access_token TEXT,'
+          'refresh_token TEXT)',
         );
 
         await db.execute(
           'CREATE TABLE ESTOQUE_MAT_MOV('
-              'mov_sqlite INTEGER PRIMARY KEY AUTOINCREMENT,'
-              'mov_servidor INTEGER,'
-              'data_inicio DATETIME NOT NULL,'
-              'data_modificacao DATETIME NOT NULL,'
-              'usuario VARCHAR(25) NOT NULL,'
-              'origem VARCHAR(8) NOT NULL,'
-              'destino VARCHAR(8),'
-              'filial_origem VARCHAR(25) NOT NULL,'
-              'filial_destino VARCHAR(25),'
-              'total_pecas INTEGER NOT NULL,'
-              'status VARCHAR(25) NOT NULL)',
+          'mov_sqlite INTEGER PRIMARY KEY AUTOINCREMENT,'
+          'mov_servidor INTEGER,'
+          'data_inicio DATETIME NOT NULL,'
+          'data_modificacao DATETIME NOT NULL,'
+          'usuario VARCHAR(25) NOT NULL,'
+          'origem VARCHAR(8) NOT NULL,'
+          'destino VARCHAR(8),'
+          'filial_origem VARCHAR(25) NOT NULL,'
+          'filial_destino VARCHAR(25),'
+          'total_pecas INTEGER NOT NULL,'
+          'status VARCHAR(25) NOT NULL)',
         );
 
         await db.execute(
           'CREATE TABLE ESTOQUE_MAT_MOV_PECA('
-              'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-              'mov_sqlite INTEGER NOT NULL,'
-              'peca VARCHAR(6) NOT NULL,'
-              'material VARCHAR(11) NOT NULL,'
-              'cor_material VARCHAR(10) NOT NULL,'
-              'partida VARCHAR(6) NOT NULL,'
-              'unidade VARCHAR(5) NOT NULL,'
-              'quantidade REAL,'
-              'desc_material TEXT,'
-              'desc_cor_material TEXT,'
-              'localizacao TEXT,'
-              'filial TEXT,'
-              'FOREIGN KEY (mov_sqlite) REFERENCES ESTOQUE_MAT_MOV(mov_sqlite) ON DELETE CASCADE)',
+          'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+          'mov_sqlite INTEGER NOT NULL,'
+          'peca VARCHAR(6) NOT NULL,'
+          'material VARCHAR(11) NOT NULL,'
+          'cor_material VARCHAR(10) NOT NULL,'
+          'partida VARCHAR(6) NOT NULL,'
+          'unidade VARCHAR(5) NOT NULL,'
+          'quantidade REAL,'
+          'desc_material TEXT,'
+          'desc_cor_material TEXT,'
+          'localizacao TEXT,'
+          'filial TEXT,'
+          'FOREIGN KEY (mov_sqlite) REFERENCES ESTOQUE_MAT_MOV(mov_sqlite) ON DELETE CASCADE)',
         );
       },
     );
@@ -111,14 +111,27 @@ class SQLite {
     );
   }
 
-
-  Future<int> deletar(String tabela, int id, {String column = 'id'}) async {
+  Future<int> deletar({
+    required String tabela,
+    required Map<String, dynamic> id,
+    Map<String, dynamic>? fk,
+  }) async {
     final db = await bancoDados;
+
+    // Construção da cláusula WHERE
+    String whereClause = '${id.keys.first} = ?';
+    List<dynamic> whereArgs = [id.values.first];
+
+    // Se FK for fornecida, adicionar à cláusula WHERE
+    if (fk != null) {
+      whereClause += ' AND ${fk.keys.first} = ?';
+      whereArgs.add(fk.values.first);
+    }
+
     return await db.delete(
       tabela,
-      where: '$column = ?',
-      whereArgs: [id],
+      where: whereClause,
+      whereArgs: whereArgs,
     );
   }
-
 }

@@ -113,9 +113,11 @@ class ServMovimentacao {
   }
 
   Future<bool> deletarMovimentoLocal(int movServidor) async {
-    final int result = await _dbSqlite.deletar('ESTOQUE_MAT_MOV', movServidor);
-    return result >
-        0; // Retorna true se alguma linha foi deletada, caso contrário, false
+    final int result = await _dbSqlite.deletar(
+      tabela: 'ESTOQUE_MAT_MOV',
+      id: {'mov_servidor': movServidor},
+    );
+    return result > 0; // Retorna true se alguma linha foi deletada, caso contrário, false
   }
 
   Future<List<MovimentacaoModel>> getMovimentacoesExistentes() async {

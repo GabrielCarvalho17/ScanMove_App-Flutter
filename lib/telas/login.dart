@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:AppEstoqueMP/servicos/autenticacao.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:AppEstoqueMP/componentes/alerta.dart';
 import 'package:AppEstoqueMP/provedores/usuario.dart'; // Importe o provedor de usuário
 import 'package:provider/provider.dart'; // Importe o Provider
+import 'package:AppEstoqueMP/componentes/alerta.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -14,15 +12,12 @@ class Login extends StatefulWidget {
 }
 
 class LoginState extends State<Login> {
+  bool _isPasswordVisible = false; // Variável para controlar a visibilidade da senha
+
   final TextEditingController _controladorUsuario = TextEditingController();
   final TextEditingController _controladorSenha = TextEditingController();
   String _mensagemErro = '';
   bool _isLoading = false; // Variável para controlar o estado de carregamento
-
-  Future<void> _salvarUsuarioLogado(String usuario) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('usuario_logado', usuario);
-  }
 
   String formatarUsername(String username) {
     return username.trim().toLowerCase();
@@ -49,19 +44,11 @@ class LoginState extends State<Login> {
 
     Timer(const Duration(milliseconds: 500), () async {
       try {
-        final servAutenticacao = ServAutenticacao();
-        final autenticacao = await servAutenticacao.login(usuario, senha);
-
-        // Armazena o nome do usuário logado no SharedPreferences
-        await _salvarUsuarioLogado(usuario);
-
-        // Atualiza o provedor de usuário
+        // Acessa o provedor de usuário
         final provUsuario = Provider.of<ProvUsuario>(context, listen: false);
-        await provUsuario.saveUser(
-          usuario,
-          autenticacao.accessToken,
-          autenticacao.refreshToken,
-        );
+
+        // Chama o método login do provedor, que já gerencia o armazenamento
+        await provUsuario.login(usuario, senha);
 
         // Navega para a tela de histórico de movimentações
         Navigator.of(context).pushReplacementNamed('/hist_mov');
@@ -86,80 +73,171 @@ class LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
     return Scaffold(
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
           FocusScope.of(context).unfocus();
         },
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                TextField(
-                  controller: _controladorUsuario,
-                  decoration: InputDecoration(
-                    labelText: 'Usuário',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _controladorSenha,
-                  decoration: InputDecoration(
-                    labelText: 'Senha',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary),
-                    ),
-                  ),
-                  obscureText: true,
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50.0,
-                  child: TextButton(
-                    onPressed: _isLoading
-                        ? null
-                        : _fazerLogin, // Desabilita o botão durante o carregamento
-                    style: TextButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.0),
+        child: Stack(
+          children: [
+            Stack(
+              children: [
+                // Container escuro
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: (screenHeight - keyboardHeight) * 0.35,
+                    width: double.infinity,
+                    color: Color(0xFF212529),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 30.0),
+                            child: Container(
+                              height: 170,
+                              child: Image.asset('assets/logo_app.png'),
+                            ),
+                          ),
+                          Text(
+                            'ScanMove',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 30,
+                            ),
+                          ),
+                        ],
                       ),
-                      textStyle: const TextStyle(fontSize: 18),
                     ),
-                    child:
-                    _isLoading // Exibe o indicador de carregamento ou o texto do botão
-                        ? SizedBox(
-                      width: 24.0,
-                      height: 24.0,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.0, // Tamanho reduzido
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white),
-                      ),
-                    )
-                        : const Text('Entrar'),
+
                   ),
                 ),
-                const SizedBox(height: 30),
-                MsgErro(
-                  message: _mensagemErro,
-                  onClose: _fecharMensagemErro,
+                // Container branco sobreposto
+                Positioned(
+                  top: (screenHeight - keyboardHeight) * 0.30,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    width: double.infinity,
+                    padding:
+                    const EdgeInsets.only(top: 40.0, left: 25, right: 25),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(30),
+                        topRight: Radius.circular(30),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _controladorUsuario,
+                          decoration: InputDecoration(
+                            labelText: 'Usuário',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                              borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.primary),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        TextField(
+                          controller: _controladorSenha,
+                          obscureText: !_isPasswordVisible, // Oculta o texto
+                          decoration: InputDecoration(
+                            labelText: 'Senha',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                              borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.primary),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isPasswordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isPasswordVisible = !_isPasswordVisible;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50.0,
+                          child: TextButton(
+                            onPressed: _isLoading ? null : _fazerLogin,
+                            style: TextButton.styleFrom(
+                              backgroundColor: Color(0xFF212529),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                              ),
+                              textStyle: const TextStyle(fontSize: 18),
+                            ),
+                            child: _isLoading
+                                ? SizedBox(
+                              width: 24.0,
+                              height: 24.0,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.0,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white),
+                              ),
+                            )
+                                : const Text('Entrar'),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        MsgErro(
+                          message: _mensagemErro,
+                          onClose: _fecharMensagemErro,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
-          ),
+            // Copyright na parte inferior, que será sobreposto pelo teclado
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Visibility(
+                visible: keyboardHeight == 0,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      Image.asset(
+                        'assets/logo_copyright_kingejoe.png',
+                        height: 50,
+                      ),
+                      Text(
+                        'Copyright © Todos os direitos reservados | KING&JOE',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

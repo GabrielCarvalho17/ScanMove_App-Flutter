@@ -31,6 +31,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/logo_copyright_kingejoe.png
+    - assets/logo_app.png
 
 
 
