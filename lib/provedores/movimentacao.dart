@@ -112,16 +112,26 @@ class MovimentacaoProvider with ChangeNotifier {
   }
 
   // Remover movimentação
-  Future<void> removerMovimentacao(int movServidor) async {
+  Future<void> removerMovimentacao(Map<String, int> idInfo) async {
     try {
+      // Extrai a chave e o valor do mapa
+      final String coluna = idInfo.keys.first;
+      final int valor = idInfo.values.first;
+
+      print('Removendo da coluna: $coluna com valor: $valor');
+
       // Remover do banco de dados usando a coluna correta
       await _sqlite.deletar(
         tabela: 'ESTOQUE_MAT_MOV',
-        id: {'mov_servidor': movServidor},
+        id: {coluna: valor},
       );
 
       // Remover do provedor (lista de movimentações do dia)
-      _movsDoDia.removeWhere((mov) => mov.movServidor == movServidor);
+      if (coluna == 'mov_servidor') {
+        _movsDoDia.removeWhere((mov) => mov.movServidor == valor);
+      } else if (coluna == 'mov_sqlite') {
+        _movsDoDia.removeWhere((mov) => mov.movSqlite == valor);
+      }
 
       notifyListeners();
     } catch (e) {
@@ -130,6 +140,7 @@ class MovimentacaoProvider with ChangeNotifier {
       throw Exception('Erro ao remover movimentação.');
     }
   }
+
 
   // Define a origem e valida contra o destino e peças
   void setOrigem(String origem) {

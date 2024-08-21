@@ -5,7 +5,6 @@ import 'package:AppEstoqueMP/componentes/movimentacao.dart';
 import 'package:AppEstoqueMP/componentes/drawer.dart';
 import 'package:AppEstoqueMP/componentes/app_bar.dart';
 import 'package:AppEstoqueMP/componentes/botao_adicionar_mov.dart';
-import 'package:AppEstoqueMP/componentes/botao_sincronizar.dart';
 import 'package:AppEstoqueMP/componentes/botao_rolar_topo.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 import 'package:provider/provider.dart';
@@ -38,13 +37,15 @@ class _HistMovState extends State<HistMov> {
     if (_isInitialLoad) {
       _isInitialLoad = false;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        final movimentacaoProvider = Provider.of<MovimentacaoProvider>(context, listen: false);
+        final movimentacaoProvider =
+            Provider.of<MovimentacaoProvider>(context, listen: false);
         await movimentacaoProvider.verificarERecarregarMovs();
       });
     }
   }
 
-  Future<bool> _confirmDismiss(BuildContext context, MovimentacaoModel mov) async {
+  Future<bool> _confirmDismiss(
+      BuildContext context, MovimentacaoModel mov) async {
     if (mov.status == 'Finalizada') {
       await showDialog(
         context: context,
@@ -118,7 +119,9 @@ class _HistMovState extends State<HistMov> {
                     );
                   },
                   child: Dismissible(
-                    key: Key(mov.movServidor.toString()),
+                    key: Key(mov.movServidor != 0
+                        ? mov.movServidor.toString()
+                        : 'sqlite_${mov.movSqlite}'),
                     direction: DismissDirection.endToStart,
                     confirmDismiss: (direction) async {
                       if (direction == DismissDirection.endToStart) {
@@ -128,7 +131,23 @@ class _HistMovState extends State<HistMov> {
                     },
                     onDismissed: (direction) async {
                       if (direction == DismissDirection.endToStart) {
-                        await movimentacaoProvider.removerMovimentacao(mov.movServidor);
+                        final movimentacaoProvider =
+                            Provider.of<MovimentacaoProvider>(context,
+                                listen: false);
+
+                        // Remova a movimentação da lista de movimentações visíveis
+                        setState(() {
+                          movimentacaoProvider.movsDoDia.removeAt(index);
+                        });
+
+                        // Remova do banco de dados, utilizando o id e coluna corretos
+                        if (mov.movServidor == 0) {
+                          await movimentacaoProvider.removerMovimentacao(
+                              {'mov_sqlite': mov.movSqlite});
+                        } else {
+                          await movimentacaoProvider.removerMovimentacao(
+                              {'mov_servidor': mov.movServidor});
+                        }
                       }
                     },
                     background: Container(
