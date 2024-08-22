@@ -303,10 +303,10 @@ class ServMovimentacao {
   }
 
   Future<Map<String, dynamic>> excluirPecas(
-      int movimentacaoId, List<int> pecasIds) async {
+      int movimentacaoId, String dataModificacao, List<String> pecasIds) async {
     final pecasIdsStr = pecasIds.join(',');
     final url =
-        '${Config.baseUrl}/materiais/movimentacoes/$movimentacaoId/excluir_pecas/$pecasIdsStr/';
+        '${Config.baseUrl}/materiais/movimentacoes/$movimentacaoId/data_modificacao/$dataModificacao/excluir_pecas/$pecasIdsStr/';
     final token = await _obterToken();
 
     try {

@@ -221,7 +221,7 @@ class ProvMovimentacao with ChangeNotifier {
 
       // Chamar o método para criar a movimentação no servidor
       final response =
-      await _servMovimentacao.criarMovimentacao(_movimentacaoAtual!);
+          await _servMovimentacao.criarMovimentacao(_movimentacaoAtual!);
 
       if (response['status'] == 200 || response['status'] == 201) {
         // Atualizar o mov_servidor com o ID retornado do servidor
@@ -263,7 +263,6 @@ class ProvMovimentacao with ChangeNotifier {
       notifyListeners();
     }
   }
-
 
 // Finaliza a movimentação
   Future<void> finalizarMovimentacao() async {
@@ -337,11 +336,11 @@ class ProvMovimentacao with ChangeNotifier {
     notifyListeners();
   }
 
-
-
+  // Método para adicionar peças na movimentação atual
   Future<void> adicionarPeca(Map<String, dynamic> pecaMap) async {
     print(_movimentacaoAtual?.status);
-    final dataModificacao = DateTime.now().toIso8601String();  // Obtém a data de modificação atual
+    final dataModificacao =
+        DateTime.now().toIso8601String(); // Obtém a data de modificação atual
 
     if (_movimentacaoAtual == null) return;
 
@@ -360,7 +359,8 @@ class ProvMovimentacao with ChangeNotifier {
       _movimentacaoAtual = _movimentacaoAtual!.copyWith(
         pecas: [..._movimentacaoAtual!.pecas, PecaModel.fromJson(pecaMap)],
         totalPecas: _movimentacaoAtual!.totalPecas + 1,
-        dataModificacao: dataModificacao,  // Atualiza a data de modificação localmente
+        dataModificacao:
+            dataModificacao, // Atualiza a data de modificação localmente
       );
     } else if (_movimentacaoAtual!.status == 'Andamento') {
       // Operar a nível de instância e banco de dados
@@ -377,7 +377,8 @@ class ProvMovimentacao with ChangeNotifier {
       _movimentacaoAtual = _movimentacaoAtual!.copyWith(
         pecas: [..._movimentacaoAtual!.pecas, PecaModel.fromJson(pecaMap)],
         totalPecas: _movimentacaoAtual!.totalPecas + 1,
-        dataModificacao: dataModificacao,  // Atualiza a data de modificação localmente
+        dataModificacao:
+            dataModificacao, // Atualiza a data de modificação localmente
       );
 
       // Operações de banco de dados locais
@@ -389,14 +390,15 @@ class ProvMovimentacao with ChangeNotifier {
         tabela: 'ESTOQUE_MAT_MOV',
         valores: {
           'total_pecas': movimentacaoAtual!.pecas.length,
-          'data_modificacao': dataModificacao,  // Atualiza a data de modificação no banco de dados local
+          'data_modificacao':
+              dataModificacao, // Atualiza a data de modificação no banco de dados local
         },
         whereClausula: {
           (movimentacaoAtual!.movServidor != null &&
-              movimentacaoAtual!.movServidor != 0)
+                  movimentacaoAtual!.movServidor != 0)
               ? 'mov_servidor'
               : 'mov_sqlite': (movimentacaoAtual!.movServidor != null &&
-              movimentacaoAtual!.movServidor != 0)
+                  movimentacaoAtual!.movServidor != 0)
               ? movimentacaoAtual!.movServidor
               : movimentacaoAtual!.movSqlite,
         },
@@ -410,7 +412,8 @@ class ProvMovimentacao with ChangeNotifier {
         final response = await servicoMovimentacao.incluirPecas(
           _movimentacaoAtual!.movServidor ?? _movimentacaoAtual!.movSqlite,
           {
-            'data_modificacao': dataModificacao,  // Envia a data de modificação ao servidor
+            'data_modificacao':
+                dataModificacao, // Envia a data de modificação ao servidor
             'pecas': [_movimentacaoAtual!.pecas.last.toJson()],
           },
         );
@@ -429,12 +432,15 @@ class ProvMovimentacao with ChangeNotifier {
     notifyListeners();
   }
 
-
+  // Método para remover peças da movimentação atual
 
   Future<void> removerPeca(String pecaId) async {
     print(_movimentacaoAtual?.status);
 
     if (_movimentacaoAtual == null) return;
+
+    final dataModificacao =
+        DateTime.now().toIso8601String(); // Obtém a data de modificação atual
 
     if (_movimentacaoAtual!.status == 'Inclusão') {
       _movimentacaoAtual = _movimentacaoAtual!.copyWith(
@@ -444,13 +450,13 @@ class ProvMovimentacao with ChangeNotifier {
         totalPecas: _movimentacaoAtual!.totalPecas - 1,
       );
     } else if (_movimentacaoAtual?.status == 'Andamento') {
-      movimentacaoAtual?.totalPecas = movimentacaoAtual!.pecas.length;
-
       _movimentacaoAtual = _movimentacaoAtual!.copyWith(
         pecas: _movimentacaoAtual!.pecas
             .where((peca) => peca.peca != pecaId)
             .toList(),
         totalPecas: _movimentacaoAtual!.totalPecas - 1,
+        dataModificacao:
+            dataModificacao, // Atualiza a data de modificação localmente
       );
 
       await _sqlite.deletar(
@@ -465,6 +471,8 @@ class ProvMovimentacao with ChangeNotifier {
         tabela: 'ESTOQUE_MAT_MOV',
         valores: {
           'total_pecas': movimentacaoAtual!.pecas.length,
+          'data_modificacao':
+              dataModificacao, // Atualiza a data de modificação no banco de dados local
         },
         whereClausula: {
           (movimentacaoAtual!.movServidor != null &&
@@ -476,7 +484,28 @@ class ProvMovimentacao with ChangeNotifier {
               : movimentacaoAtual!.movSqlite,
         },
       );
+
+      // Sincronizar com o servidor em um bloco try-catch
+      try {
+        final servicoMovimentacao = ServMovimentacao();
+        final response = await servicoMovimentacao.excluirPecas(
+          _movimentacaoAtual!.movServidor ?? _movimentacaoAtual!.movSqlite,
+          dataModificacao, // Envia a data de modificação ao servidor
+          [pecaId],
+        );
+
+        if (response['status'] == 204) {
+          print('Peça removida e sincronizada com sucesso.');
+        } else {
+          print(
+              'Erro ao sincronizar a remoção com o servidor: ${response['message']}');
+        }
+      } catch (e) {
+        // Captura qualquer erro durante a sincronização com o servidor
+        print('Erro ao se comunicar com o servidor: $e');
+      }
     }
+
     notifyListeners();
   }
 
