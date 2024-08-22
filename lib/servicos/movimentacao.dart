@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/rendering.dart';
 import 'package:http/http.dart' as http;
 import 'package:AppEstoqueMP/modelos/movimentacao.dart';
 import 'package:AppEstoqueMP/modelos/peca.dart';
@@ -265,12 +264,12 @@ class ServMovimentacao {
   }
 
   Future<Map<String, dynamic>> incluirPecas(
-      int movimentacaoId, List<Map<String, dynamic>> pecas) async {
+      int movimentacaoId, Map<String, dynamic> dados) async {
     final url =
         '${Config.baseUrl}/materiais/movimentacoes/$movimentacaoId/incluir_pecas/';
     final token = await _obterToken();
 
-    final pecasJson = json.encode({'pecas': pecas});
+    final dadosJson = json.encode(dados);
 
     try {
       final response = await http.post(
@@ -279,7 +278,7 @@ class ServMovimentacao {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: pecasJson,
+        body: dadosJson,
       );
 
       if (response.statusCode == 201) {

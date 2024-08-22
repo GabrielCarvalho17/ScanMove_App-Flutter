@@ -27,7 +27,8 @@ class BotaoFinalizar extends StatelessWidget {
   }
 
   Future<void> _finalizarMovimentacao(BuildContext context) async {
-    final movimentacaoProvider = Provider.of<ProvMovimentacao>(context, listen: false);
+    final movimentacaoProvider =
+        Provider.of<ProvMovimentacao>(context, listen: false);
     final movimentacaoAtual = movimentacaoProvider.movimentacaoAtual;
 
     if (movimentacaoAtual == null) {
@@ -38,7 +39,8 @@ class BotaoFinalizar extends StatelessWidget {
     try {
       final podeGravar = await movimentacaoProvider.permissaoGravar();
       if (!podeGravar) {
-        _mostrarResultadoDialogo(context, "A movimentação não pode ser gravada/finalizada.");
+        _mostrarResultadoDialogo(
+            context, "A movimentação não pode ser gravada/finalizada.");
         return;
       }
 
@@ -52,9 +54,9 @@ class BotaoFinalizar extends StatelessWidget {
 
         if (resposta == true) {
           await movimentacaoProvider.salvarMovimentacao();
-          _mostrarResultadoDialogo(context, "Movimentação iniciada com sucesso.");
-          await movimentacaoProvider.limparMovimentacaoAtual();
-          Navigator.of(context).pop(); // Volta para a tela anterior
+          _mostrarResultadoDialogo(
+              context, "Movimentação iniciada com sucesso.");
+          // Não retorna para a tela anterior
         }
       } else if (movimentacaoAtual.status == 'Andamento') {
         final resposta = await _mostrarDialogoConfirmacao(
@@ -66,10 +68,14 @@ class BotaoFinalizar extends StatelessWidget {
 
         if (resposta == true) {
           movimentacaoProvider.finalizarMovimentacao();
-          _mostrarResultadoDialogo(context, "Movimentação finalizada com sucesso.");
-          Navigator.of(context).pop(); // Volta para a tela anterior
-          Navigator.of(context).pushNamed('/hist_mov'); // Volta para a tela anterior
-
+          _mostrarResultadoDialogo(
+              context, "Movimentação finalizada com sucesso.",
+              onDialogClosed: () {
+            Navigator.of(context)
+                .pop(); // Volta para a tela anterior após o usuário fechar o diálogo
+            Navigator.of(context)
+                .pushNamed('/hist_mov'); // Navega para a tela de histórico
+          });
         }
       } else {
         _mostrarResultadoDialogo(context, "Status desconhecido.");
@@ -79,8 +85,8 @@ class BotaoFinalizar extends StatelessWidget {
     }
   }
 
-  Future<bool?> _mostrarDialogoConfirmacao(
-      BuildContext context, String mensagem, String textoBotao1, String textoBotao2) {
+  Future<bool?> _mostrarDialogoConfirmacao(BuildContext context,
+      String mensagem, String textoBotao1, String textoBotao2) {
     return showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -96,16 +102,20 @@ class BotaoFinalizar extends StatelessWidget {
     );
   }
 
-  void _mostrarResultadoDialogo(BuildContext context, String mensagem) {
+  void _mostrarResultadoDialogo(BuildContext context, String mensagem,
+      {VoidCallback? onDialogClosed}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return CustomDialogo(
           titulo: 'Resultado',
           mensagem: mensagem,
-          textoBotao1: 'OK',
-          onBotao1Pressed: () {
+          textoBotao2: 'OK',
+          onBotao2Pressed: () {
             Navigator.of(context).pop(); // Fecha o diálogo
+            if (onDialogClosed != null) {
+              onDialogClosed(); // Executa a ação de navegação após o diálogo ser fechado
+            }
           },
         );
       },

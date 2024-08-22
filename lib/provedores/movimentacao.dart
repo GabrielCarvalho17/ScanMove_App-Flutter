@@ -190,7 +190,7 @@ class ProvMovimentacao with ChangeNotifier {
     notifyListeners();
   }
 
-  // Salva a movimentação (pode ser usada para mover para status "Andamento")
+// Salva a movimentação (pode ser usada para mover para status "Andamento")
   Future<void> salvarMovimentacao() async {
     if (_movimentacaoAtual != null) {
       if (_movimentacaoAtual!.movServidor == 0) {
@@ -219,54 +219,54 @@ class ProvMovimentacao with ChangeNotifier {
       int movSqliteId = await db.insert('ESTOQUE_MAT_MOV', movimentacaoMap);
       print('ID da movimentação no SQLite: $movSqliteId');
 
-      // Persistir as peças associadas à movimentação
-      for (var peca in mov.pecas) {
-        final pecaMap = {
-          'peca': peca.peca,
-          'material': peca.material,
-          'cor_material': peca.corMaterial,
-          'partida': peca.partida,
-          'unidade': peca.unidade,
-          'quantidade': peca.quantidade,
-          'mov_sqlite': movSqliteId,
-          'desc_material': peca.descMaterial,
-          'desc_cor_material': peca.descCorMaterial,
-          'localizacao': peca.localizacao,
-          'filial': peca.filial,
-        };
+      // Chamar o método para criar a movimentação no servidor
+      final response =
+      await _servMovimentacao.criarMovimentacao(_movimentacaoAtual!);
 
-        await db.insert('ESTOQUE_MAT_MOV_PECA', pecaMap);
+      if (response['status'] == 200 || response['status'] == 201) {
+        // Atualizar o mov_servidor com o ID retornado do servidor
+        int movServidorId = response['data']['mov_servidor'];
+        _movimentacaoAtual =
+            _movimentacaoAtual!.copyWith(movServidor: movServidorId);
 
-        // Chamar o método para criar a movimentação no servidor
-        final response =
-            await _servMovimentacao.criarMovimentacao(_movimentacaoAtual!);
+        // Atualizar o registro no SQLite com o ID do servidor usando o método atualizar
+        await _sqlite.atualizar(
+          tabela: 'ESTOQUE_MAT_MOV',
+          valores: {'mov_servidor': movServidorId},
+          whereClausula: {'mov_sqlite': movSqliteId},
+        );
 
-        if (response['status'] == 200 || response['status'] == 201) {
-          // Atualizar o mov_servidor com o ID retornado do servidor
-          int movServidorId = response['data']['mov_servidor'];
-          _movimentacaoAtual =
-              _movimentacaoAtual!.copyWith(movServidor: movServidorId);
+        print('Movimentação atualizada com mov_servidor: $movServidorId');
 
-          // Atualizar o registro no SQLite com o ID do servidor usando o método atualizar
-          await _sqlite.atualizar(
-            tabela: 'ESTOQUE_MAT_MOV',
-            valores: {'mov_servidor': movServidorId},
-            whereClausula: {'mov_sqlite': movSqliteId},
-          );
+        // Persistir as peças associadas à movimentação localmente
+        for (var peca in mov.pecas) {
+          final pecaMap = {
+            'peca': peca.peca,
+            'material': peca.material,
+            'cor_material': peca.corMaterial,
+            'partida': peca.partida,
+            'unidade': peca.unidade,
+            'quantidade': peca.quantidade,
+            'mov_sqlite': movSqliteId,
+            'desc_material': peca.descMaterial,
+            'desc_cor_material': peca.descCorMaterial,
+            'localizacao': peca.localizacao,
+            'filial': peca.filial,
+          };
 
-          print('Movimentação atualizada com mov_servidor: $movServidorId');
-        } else {
-          print(
-              'Erro ao criar movimentação no servidor: ${response['message']}');
+          await db.insert('ESTOQUE_MAT_MOV_PECA', pecaMap);
         }
+      } else {
+        print('Erro ao criar movimentação no servidor: ${response['message']}');
       }
+
       notifyListeners();
     }
   }
 
+
 // Finaliza a movimentação
   Future<void> finalizarMovimentacao() async {
-
     final dataModificacao = DateTime.now().toIso8601String();
     if (_movimentacaoAtual != null &&
         _movimentacaoAtual!.status == 'Andamento') {
@@ -292,7 +292,7 @@ class ProvMovimentacao with ChangeNotifier {
         },
       );
 
-    // Se a movimentação já tem um ID de servidor, sincronizar com o servidor
+      // Se a movimentação já tem um ID de servidor, sincronizar com o servidor
       if (movimentacaoAtual!.movServidor != null &&
           movimentacaoAtual!.movServidor != 0) {
         try {
@@ -337,9 +337,11 @@ class ProvMovimentacao with ChangeNotifier {
     notifyListeners();
   }
 
-  // Adiciona uma peça à movimentação e valida
+
+
   Future<void> adicionarPeca(Map<String, dynamic> pecaMap) async {
     print(_movimentacaoAtual?.status);
+    final dataModificacao = DateTime.now().toIso8601String();  // Obtém a data de modificação atual
 
     if (_movimentacaoAtual == null) return;
 
@@ -358,6 +360,7 @@ class ProvMovimentacao with ChangeNotifier {
       _movimentacaoAtual = _movimentacaoAtual!.copyWith(
         pecas: [..._movimentacaoAtual!.pecas, PecaModel.fromJson(pecaMap)],
         totalPecas: _movimentacaoAtual!.totalPecas + 1,
+        dataModificacao: dataModificacao,  // Atualiza a data de modificação localmente
       );
     } else if (_movimentacaoAtual!.status == 'Andamento') {
       // Operar a nível de instância e banco de dados
@@ -374,9 +377,10 @@ class ProvMovimentacao with ChangeNotifier {
       _movimentacaoAtual = _movimentacaoAtual!.copyWith(
         pecas: [..._movimentacaoAtual!.pecas, PecaModel.fromJson(pecaMap)],
         totalPecas: _movimentacaoAtual!.totalPecas + 1,
+        dataModificacao: dataModificacao,  // Atualiza a data de modificação localmente
       );
 
-      // Operações de banco de dados
+      // Operações de banco de dados locais
       pecaMap['mov_sqlite'] = _movimentacaoAtual?.movSqlite;
 
       await _sqlite.inserir('ESTOQUE_MAT_MOV_PECA', pecaMap);
@@ -385,23 +389,47 @@ class ProvMovimentacao with ChangeNotifier {
         tabela: 'ESTOQUE_MAT_MOV',
         valores: {
           'total_pecas': movimentacaoAtual!.pecas.length,
+          'data_modificacao': dataModificacao,  // Atualiza a data de modificação no banco de dados local
         },
         whereClausula: {
           (movimentacaoAtual!.movServidor != null &&
-                  movimentacaoAtual!.movServidor != 0)
+              movimentacaoAtual!.movServidor != 0)
               ? 'mov_servidor'
               : 'mov_sqlite': (movimentacaoAtual!.movServidor != null &&
-                  movimentacaoAtual!.movServidor != 0)
+              movimentacaoAtual!.movServidor != 0)
               ? movimentacaoAtual!.movServidor
               : movimentacaoAtual!.movSqlite,
         },
       );
 
       movimentacaoAtual?.totalPecas = movimentacaoAtual!.pecas.length;
+
+      // Sincronizar com o servidor em um bloco try-catch
+      try {
+        final servicoMovimentacao = ServMovimentacao();
+        final response = await servicoMovimentacao.incluirPecas(
+          _movimentacaoAtual!.movServidor ?? _movimentacaoAtual!.movSqlite,
+          {
+            'data_modificacao': dataModificacao,  // Envia a data de modificação ao servidor
+            'pecas': [_movimentacaoAtual!.pecas.last.toJson()],
+          },
+        );
+
+        if (response['status'] == 201) {
+          print('Sincronizado com sucesso.');
+        } else {
+          print('Erro ao sincronizar com o servidor: ${response['message']}');
+        }
+      } catch (e) {
+        // Captura qualquer erro durante a sincronização com o servidor
+        print('Erro ao se comunicar com o servidor: $e');
+      }
     }
 
     notifyListeners();
   }
+
+
 
   Future<void> removerPeca(String pecaId) async {
     print(_movimentacaoAtual?.status);

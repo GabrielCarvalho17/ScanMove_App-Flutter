@@ -43,7 +43,7 @@ class LoginState extends State<Login> {
       _isLoading = true;
     });
 
-    Timer(const Duration(milliseconds: 500), () async {
+    Timer(const Duration(milliseconds: 200), () async {
       try {
         // Acessa o provedor de usuário
         final provUsuario = Provider.of<ProvUsuario>(context, listen: false);
