@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/rendering.dart';
 import 'package:http/http.dart' as http;
 import 'package:AppEstoqueMP/modelos/movimentacao.dart';
 import 'package:AppEstoqueMP/modelos/peca.dart';
@@ -117,7 +118,8 @@ class ServMovimentacao {
       tabela: 'ESTOQUE_MAT_MOV',
       id: {'mov_servidor': movServidor},
     );
-    return result > 0; // Retorna true se alguma linha foi deletada, caso contrário, false
+    return result >
+        0; // Retorna true se alguma linha foi deletada, caso contrário, false
   }
 
   Future<List<MovimentacaoModel>> getMovimentacoesExistentes() async {
@@ -171,7 +173,7 @@ class ServMovimentacao {
       }).toList();
 
       movimentacoes.add(MovimentacaoModel(
-        movServidor: mov['mov_servidor']??0,
+        movServidor: mov['mov_servidor'] ?? 0,
         movSqlite: mov['mov_sqlite'],
         dataInicio: mov['data_inicio'],
         dataModificacao: mov['data_modificacao'],
@@ -187,6 +189,120 @@ class ServMovimentacao {
     }
 
     return movimentacoes;
+  }
+
+  Future<Map<String, dynamic>> criarMovimentacao(
+      MovimentacaoModel movimentacao) async {
+    final url = '${Config.baseUrl}/materiais/movimentacoes/';
+    final token = await _obterToken();
+    final movimentacaoJson = json.encode(movimentacao.toJson());
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: movimentacaoJson,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return {
+          'status': response.statusCode,
+          'message': 'Criada com sucesso',
+          'data': data
+        };
+      } else {
+        return {
+          'status': response.statusCode,
+          'message': 'Erro ao criar movimentação',
+          'error': response.body
+        };
+      }
+    } catch (e) {
+      return {
+        'status': 'error',
+        'message': 'Erro ao se comunicar com o servidor',
+        'error': e.toString()
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> removerMovimentacao(int movimentacaoId) async {
+    final url = '${Config.baseUrl}/materiais/movimentacoes/$movimentacaoId/';
+    final token = await _obterToken();
+
+    try {
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'status': response.statusCode, 'message': 'Movimentação removida com sucesso'};
+      } else {
+        return {'status': response.statusCode, 'message': 'Erro ao remover movimentação', 'error': response.body};
+      }
+    } catch (e) {
+      return {'status': 'error', 'message': 'Erro ao se comunicar com o servidor', 'error': e.toString()};
+    }
+  }
+
+
+  Future<Map<String, dynamic>> incluirPecas(int movimentacaoId, List<Map<String, dynamic>> pecas) async {
+    final url = '${Config.baseUrl}/materiais/movimentacoes/$movimentacaoId/incluir_pecas/';
+    final token = await _obterToken();
+
+    final pecasJson = json.encode({'pecas': pecas});
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: pecasJson,
+      );
+
+      if (response.statusCode == 201) {
+        return {'status': response.statusCode, 'message': 'Peças incluídas com sucesso'};
+      } else {
+        return {'status': response.statusCode, 'message': 'Erro ao incluir peças', 'error': response.body};
+      }
+    } catch (e) {
+      return {'status': 'error', 'message': 'Erro ao se comunicar com o servidor', 'error': e.toString()};
+    }
+  }
+
+
+  Future<Map<String, dynamic>> excluirPecas(int movimentacaoId, List<int> pecasIds) async {
+    final pecasIdsStr = pecasIds.join(',');
+    final url = '${Config.baseUrl}/materiais/movimentacoes/$movimentacaoId/excluir_pecas/$pecasIdsStr/';
+    final token = await _obterToken();
+
+    try {
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 204) {
+        return {'status': response.statusCode, 'message': 'Peças excluídas com sucesso'};
+      } else {
+        return {'status': response.statusCode, 'message': 'Erro ao excluir peças', 'error': response.body};
+      }
+    } catch (e) {
+      return {'status': 'error', 'message': 'Erro ao se comunicar com o servidor', 'error': e.toString()};
+    }
   }
 
 }

@@ -12,7 +12,8 @@ class Login extends StatefulWidget {
 }
 
 class LoginState extends State<Login> {
-  bool _isPasswordVisible = false; // Variável para controlar a visibilidade da senha
+  bool _isPasswordVisible =
+      false; // Variável para controlar a visibilidade da senha
 
   final TextEditingController _controladorUsuario = TextEditingController();
   final TextEditingController _controladorSenha = TextEditingController();
@@ -99,9 +100,11 @@ class LoginState extends State<Login> {
                       child: Column(
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(top: 30.0),
+                            padding: const EdgeInsets.only(top: 20.0),
                             child: Container(
-                              height: 170,
+                              // Calcula a altura da imagem com base na altura da tela disponível
+                              height: (screenHeight - keyboardHeight) *
+                                  0.20, // Altere o valor conforme necessário
                               child: Image.asset('assets/logo_app.png'),
                             ),
                           ),
@@ -111,13 +114,14 @@ class LoginState extends State<Login> {
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
-                              fontSize: 30,
+                              // Ajusta o tamanho da fonte proporcionalmente ao espaço disponível
+                              fontSize: (screenHeight - keyboardHeight) *
+                                  0.04, // Ajuste o fator conforme necessário
                             ),
                           ),
                         ],
                       ),
                     ),
-
                   ),
                 ),
                 // Container branco sobreposto
@@ -128,7 +132,7 @@ class LoginState extends State<Login> {
                   child: Container(
                     width: double.infinity,
                     padding:
-                    const EdgeInsets.only(top: 40.0, left: 25, right: 25),
+                        const EdgeInsets.only(top: 40.0, left: 25, right: 25),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.only(
@@ -190,14 +194,14 @@ class LoginState extends State<Login> {
                             ),
                             child: _isLoading
                                 ? SizedBox(
-                              width: 24.0,
-                              height: 24.0,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.0,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white),
-                              ),
-                            )
+                                    width: 24.0,
+                                    height: 24.0,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.0,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                    ),
+                                  )
                                 : const Text('Entrar'),
                           ),
                         ),
