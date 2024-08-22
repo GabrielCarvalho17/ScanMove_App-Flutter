@@ -100,16 +100,28 @@ class SQLite {
     return resultado.isNotEmpty ? resultado.first : null;
   }
 
-  Future<int> atualizar(String tabela, Map<String, dynamic> dados,
-      {String column = 'id', dynamic valor}) async {
+  Future<int> atualizar({
+    required String tabela,                    // Nome da tabela
+    required Map<String, dynamic> valores,     // Mapa de colunas e valores a serem atualizados
+    required Map<String, dynamic> whereClausula, // Mapa de colunas e valores para a cláusula WHERE
+  }) async {
     final db = await bancoDados;
-    return await db.update(
-      tabela,
-      dados,
-      where: '$column = ?',
-      whereArgs: [valor ?? dados['id']],
+
+    // Construir a string de SET usando os valores fornecidos
+    String setClausula = valores.keys.map((key) => '$key = ?').join(', ');
+
+    // Construir a string de WHERE usando a cláusula fornecida
+    String whereClausulaString = whereClausula.keys.map((key) => '$key = ?').join(' AND ');
+
+    // Combinar os valores de atualização com os valores do WHERE em uma única lista de argumentos
+    List<dynamic> argumentos = [...valores.values, ...whereClausula.values];
+
+    return await db.rawUpdate(
+      'UPDATE $tabela SET $setClausula WHERE $whereClausulaString',
+      argumentos,
     );
   }
+
 
   Future<int> deletar({
     required String tabela,

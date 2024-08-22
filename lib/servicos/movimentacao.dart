@@ -244,18 +244,30 @@ class ServMovimentacao {
       );
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        return {'status': response.statusCode, 'message': 'Movimentação removida com sucesso'};
+        return {
+          'status': response.statusCode,
+          'message': 'Movimentação removida com sucesso'
+        };
       } else {
-        return {'status': response.statusCode, 'message': 'Erro ao remover movimentação', 'error': response.body};
+        return {
+          'status': response.statusCode,
+          'message': 'Erro ao remover movimentação',
+          'error': response.body
+        };
       }
     } catch (e) {
-      return {'status': 'error', 'message': 'Erro ao se comunicar com o servidor', 'error': e.toString()};
+      return {
+        'status': 'error',
+        'message': 'Erro ao se comunicar com o servidor',
+        'error': e.toString()
+      };
     }
   }
 
-
-  Future<Map<String, dynamic>> incluirPecas(int movimentacaoId, List<Map<String, dynamic>> pecas) async {
-    final url = '${Config.baseUrl}/materiais/movimentacoes/$movimentacaoId/incluir_pecas/';
+  Future<Map<String, dynamic>> incluirPecas(
+      int movimentacaoId, List<Map<String, dynamic>> pecas) async {
+    final url =
+        '${Config.baseUrl}/materiais/movimentacoes/$movimentacaoId/incluir_pecas/';
     final token = await _obterToken();
 
     final pecasJson = json.encode({'pecas': pecas});
@@ -271,19 +283,31 @@ class ServMovimentacao {
       );
 
       if (response.statusCode == 201) {
-        return {'status': response.statusCode, 'message': 'Peças incluídas com sucesso'};
+        return {
+          'status': response.statusCode,
+          'message': 'Peças incluídas com sucesso'
+        };
       } else {
-        return {'status': response.statusCode, 'message': 'Erro ao incluir peças', 'error': response.body};
+        return {
+          'status': response.statusCode,
+          'message': 'Erro ao incluir peças',
+          'error': response.body
+        };
       }
     } catch (e) {
-      return {'status': 'error', 'message': 'Erro ao se comunicar com o servidor', 'error': e.toString()};
+      return {
+        'status': 'error',
+        'message': 'Erro ao se comunicar com o servidor',
+        'error': e.toString()
+      };
     }
   }
 
-
-  Future<Map<String, dynamic>> excluirPecas(int movimentacaoId, List<int> pecasIds) async {
+  Future<Map<String, dynamic>> excluirPecas(
+      int movimentacaoId, List<int> pecasIds) async {
     final pecasIdsStr = pecasIds.join(',');
-    final url = '${Config.baseUrl}/materiais/movimentacoes/$movimentacaoId/excluir_pecas/$pecasIdsStr/';
+    final url =
+        '${Config.baseUrl}/materiais/movimentacoes/$movimentacaoId/excluir_pecas/$pecasIdsStr/';
     final token = await _obterToken();
 
     try {
@@ -296,13 +320,62 @@ class ServMovimentacao {
       );
 
       if (response.statusCode == 204) {
-        return {'status': response.statusCode, 'message': 'Peças excluídas com sucesso'};
+        return {
+          'status': response.statusCode,
+          'message': 'Peças excluídas com sucesso'
+        };
       } else {
-        return {'status': response.statusCode, 'message': 'Erro ao excluir peças', 'error': response.body};
+        return {
+          'status': response.statusCode,
+          'message': 'Erro ao excluir peças',
+          'error': response.body
+        };
       }
     } catch (e) {
-      return {'status': 'error', 'message': 'Erro ao se comunicar com o servidor', 'error': e.toString()};
+      return {
+        'status': 'error',
+        'message': 'Erro ao se comunicar com o servidor',
+        'error': e.toString()
+      };
     }
   }
 
+  Future<Map<String, dynamic>> atualizarMovimentacao(
+      int movimentacaoId, Map<String, dynamic> camposParaAtualizar) async {
+    final url = '${Config.baseUrl}/materiais/movimentacoes/$movimentacaoId/';
+    final token = await _obterToken();
+    final camposJson = json.encode(camposParaAtualizar);
+
+    try {
+      final response = await http.patch(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: camposJson,
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return {
+          'status': response.statusCode,
+          'message': 'Movimentação atualizada com sucesso',
+          'data': data
+        };
+      } else {
+        return {
+          'status': response.statusCode,
+          'message': 'Erro ao atualizar movimentação',
+          'error': response.body
+        };
+      }
+    } catch (e) {
+      return {
+        'status': 'error',
+        'message': 'Erro ao se comunicar com o servidor',
+        'error': e.toString()
+      };
+    }
+  }
 }

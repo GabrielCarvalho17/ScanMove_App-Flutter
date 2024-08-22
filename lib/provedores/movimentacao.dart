@@ -141,7 +141,6 @@ class ProvMovimentacao with ChangeNotifier {
     }
   }
 
-
   // Define a origem e valida contra o destino e peças
   void setOrigem(String origem) {
     if (_movimentacaoAtual == null) return;
@@ -237,6 +236,29 @@ class ProvMovimentacao with ChangeNotifier {
         };
 
         await db.insert('ESTOQUE_MAT_MOV_PECA', pecaMap);
+
+        // Chamar o método para criar a movimentação no servidor
+        final response =
+            await _servMovimentacao.criarMovimentacao(_movimentacaoAtual!);
+
+        if (response['status'] == 200 || response['status'] == 201) {
+          // Atualizar o mov_servidor com o ID retornado do servidor
+          int movServidorId = response['data']['mov_servidor'];
+          _movimentacaoAtual =
+              _movimentacaoAtual!.copyWith(movServidor: movServidorId);
+
+          // Atualizar o registro no SQLite com o ID do servidor usando o método atualizar
+          await _sqlite.atualizar(
+            tabela: 'ESTOQUE_MAT_MOV',
+            valores: {'mov_servidor': movServidorId},
+            whereClausula: {'mov_sqlite': movSqliteId},
+          );
+
+          print('Movimentação atualizada com mov_servidor: $movServidorId');
+        } else {
+          print(
+              'Erro ao criar movimentação no servidor: ${response['message']}');
+        }
       }
       notifyListeners();
     }
@@ -244,28 +266,56 @@ class ProvMovimentacao with ChangeNotifier {
 
 // Finaliza a movimentação
   Future<void> finalizarMovimentacao() async {
+
+    final dataModificacao = DateTime.now().toIso8601String();
     if (_movimentacaoAtual != null &&
         _movimentacaoAtual!.status == 'Andamento') {
       _movimentacaoAtual = _movimentacaoAtual!.copyWith(
         status: 'Finalizada',
-        dataModificacao: DateTime.now().toIso8601String(),
+        dataModificacao: dataModificacao,
       );
 
       await _sqlite.atualizar(
-        'ESTOQUE_MAT_MOV',
-        {'status': 'Finalizada'},
-        column: (movimentacaoAtual!.movServidor != null &&
-                movimentacaoAtual!.movServidor != 0)
-            ? 'mov_servidor'
-            : 'mov_sqlite',
-        valor: (movimentacaoAtual!.movServidor != null &&
-                movimentacaoAtual!.movServidor != 0)
-            ? movimentacaoAtual!.movServidor
-            : movimentacaoAtual!.movSqlite,
+        tabela: 'ESTOQUE_MAT_MOV',
+        valores: {
+          'status': 'Finalizada',
+          'data_modificacao': dataModificacao,
+        },
+        whereClausula: {
+          (movimentacaoAtual!.movServidor != null &&
+                  movimentacaoAtual!.movServidor != 0)
+              ? 'mov_servidor'
+              : 'mov_sqlite': (movimentacaoAtual!.movServidor != null &&
+                  movimentacaoAtual!.movServidor != 0)
+              ? movimentacaoAtual!.movServidor
+              : movimentacaoAtual!.movSqlite,
+        },
       );
 
-      print(movimentacaoAtual?.movServidor);
-      notifyListeners();
+    // Se a movimentação já tem um ID de servidor, sincronizar com o servidor
+      if (movimentacaoAtual!.movServidor != null &&
+          movimentacaoAtual!.movServidor != 0) {
+        try {
+          final response = await _servMovimentacao.atualizarMovimentacao(
+            movimentacaoAtual!.movServidor!,
+            {
+              'status': true,
+              'data_modificacao': dataModificacao,
+            },
+          );
+
+          if (response['status'] == 200) {
+            print('Movimentação sincronizada com o servidor.');
+          } else {
+            print(
+                'Erro ao sincronizar movimentação com o servidor: ${response['message']}');
+          }
+        } catch (e) {
+          print('Erro ao comunicar com o servidor: $e');
+        }
+      } else {
+        print('Movimentação finalizada apenas localmente.');
+      }
     }
   }
 
@@ -332,16 +382,19 @@ class ProvMovimentacao with ChangeNotifier {
       await _sqlite.inserir('ESTOQUE_MAT_MOV_PECA', pecaMap);
 
       await _sqlite.atualizar(
-        'ESTOQUE_MAT_MOV',
-        {'total_pecas': movimentacaoAtual!.pecas.length},
-        column: (movimentacaoAtual!.movServidor != null &&
-                movimentacaoAtual!.movServidor != 0)
-            ? 'mov_servidor'
-            : 'mov_sqlite',
-        valor: (movimentacaoAtual!.movServidor != null &&
-                movimentacaoAtual!.movServidor != 0)
-            ? movimentacaoAtual!.movServidor
-            : movimentacaoAtual!.movSqlite,
+        tabela: 'ESTOQUE_MAT_MOV',
+        valores: {
+          'total_pecas': movimentacaoAtual!.pecas.length,
+        },
+        whereClausula: {
+          (movimentacaoAtual!.movServidor != null &&
+                  movimentacaoAtual!.movServidor != 0)
+              ? 'mov_servidor'
+              : 'mov_sqlite': (movimentacaoAtual!.movServidor != null &&
+                  movimentacaoAtual!.movServidor != 0)
+              ? movimentacaoAtual!.movServidor
+              : movimentacaoAtual!.movSqlite,
+        },
       );
 
       movimentacaoAtual?.totalPecas = movimentacaoAtual!.pecas.length;
@@ -363,7 +416,6 @@ class ProvMovimentacao with ChangeNotifier {
         totalPecas: _movimentacaoAtual!.totalPecas - 1,
       );
     } else if (_movimentacaoAtual?.status == 'Andamento') {
-
       movimentacaoAtual?.totalPecas = movimentacaoAtual!.pecas.length;
 
       _movimentacaoAtual = _movimentacaoAtual!.copyWith(
@@ -373,26 +425,29 @@ class ProvMovimentacao with ChangeNotifier {
         totalPecas: _movimentacaoAtual!.totalPecas - 1,
       );
 
-
       await _sqlite.deletar(
         tabela: 'ESTOQUE_MAT_MOV_PECA',
-        id: {'peca': pecaId},  // Mapa para o ID
-        fk: {'mov_sqlite': movimentacaoAtual!.movSqlite},  // Mapa opcional para a FK
+        id: {'peca': pecaId}, // Mapa para o ID
+        fk: {
+          'mov_sqlite': movimentacaoAtual!.movSqlite
+        }, // Mapa opcional para a FK
       );
 
       await _sqlite.atualizar(
-        'ESTOQUE_MAT_MOV',
-        {'total_pecas': movimentacaoAtual!.pecas.length},
-        column: (movimentacaoAtual!.movServidor != null &&
-            movimentacaoAtual!.movServidor != 0)
-            ? 'mov_servidor'
-            : 'mov_sqlite',
-        valor: (movimentacaoAtual!.movServidor != null &&
-            movimentacaoAtual!.movServidor != 0)
-            ? movimentacaoAtual!.movServidor
-            : movimentacaoAtual!.movSqlite,
+        tabela: 'ESTOQUE_MAT_MOV',
+        valores: {
+          'total_pecas': movimentacaoAtual!.pecas.length,
+        },
+        whereClausula: {
+          (movimentacaoAtual!.movServidor != null &&
+                  movimentacaoAtual!.movServidor != 0)
+              ? 'mov_servidor'
+              : 'mov_sqlite': (movimentacaoAtual!.movServidor != null &&
+                  movimentacaoAtual!.movServidor != 0)
+              ? movimentacaoAtual!.movServidor
+              : movimentacaoAtual!.movSqlite,
+        },
       );
-
     }
     notifyListeners();
   }

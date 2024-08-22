@@ -1,4 +1,4 @@
-package com.example.app_estoque_mp;
+package com.kingejoe.app_estoque_mp;
 
 import io.flutter.embedding.android.FlutterActivity;
 

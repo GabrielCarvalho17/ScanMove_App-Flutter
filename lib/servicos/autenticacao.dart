@@ -11,19 +11,22 @@ class ServAutenticacao {
 
   Future<Autenticacao> login(String username, String password) async {
     try {
-      final response = await http.post(
-        Uri.parse('${Config.baseUrl}/token/'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, String>{
-          'username': username,
-          'password': password,
-        }),
-      ).timeout(Duration(seconds: 15));
+      final response = await http
+          .post(
+            Uri.parse('${Config.baseUrl}/token/'),
+            headers: <String, String>{
+              'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: jsonEncode(<String, String>{
+              'username': username,
+              'password': password,
+            }),
+          )
+          .timeout(Duration(seconds: 15));
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        final Map<String, dynamic> data =
+            jsonDecode(utf8.decode(response.bodyBytes));
 
         final List<Map<String, dynamic>> users = await _dbSqlite.listar(
           'USUARIO',
@@ -33,14 +36,15 @@ class ServAutenticacao {
 
         if (users.isNotEmpty) {
           await _dbSqlite.atualizar(
-            'USUARIO',
-            {
+            tabela: 'USUARIO',
+            valores: {
               'username': username,
               'access_token': data['access'],
               'refresh_token': data['refresh'],
             },
-            column: 'id',
-            valor: users.first['id'],
+            whereClausula: {
+              'id': users.first['id'],
+            },
           );
         } else {
           await _dbSqlite.inserir('USUARIO', {
@@ -50,17 +54,20 @@ class ServAutenticacao {
           });
         }
 
-
         return Autenticacao.fromJson(data);
       } else {
-        final Map<String, dynamic> errorData = jsonDecode(utf8.decode(response.bodyBytes));
-        final errorMessage = errorData['detail'] ?? 'Usuário e/ou senha incorretos';
+        final Map<String, dynamic> errorData =
+            jsonDecode(utf8.decode(response.bodyBytes));
+        final errorMessage =
+            errorData['detail'] ?? 'Usuário e/ou senha incorretos';
         throw Exception(errorMessage);
       }
     } on TimeoutException {
-      throw Exception('O servidor não está respondendo. Tente novamente mais tarde.');
+      throw Exception(
+          'O servidor não está respondendo. Tente novamente mais tarde.');
     } on http.ClientException {
-      throw Exception('Não foi possível conectar ao servidor. Verifique sua conexão com a internet ou tente novamente mais tarde.');
+      throw Exception(
+          'Não foi possível conectar ao servidor. Verifique sua conexão com a internet ou tente novamente mais tarde.');
     } catch (e) {
       final errorMessage = e.toString().replaceAll('Exception: ', '');
       throw Exception(errorMessage);
@@ -85,24 +92,27 @@ class ServAutenticacao {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        final Map<String, dynamic> data =
+            jsonDecode(utf8.decode(response.bodyBytes));
         await _dbSqlite.atualizar(
-          'USUARIO',
-          {
+          tabela: 'USUARIO',
+          valores: {
             'access_token': data['access'],
           },
-          column: 'id',
-          valor: users.first['id'],
+          whereClausula: {
+            'id': users.first['id'],
+          },
         );
-
       } else {
-        final Map<String, dynamic> errorData = jsonDecode(utf8.decode(response.bodyBytes));
+        final Map<String, dynamic> errorData =
+            jsonDecode(utf8.decode(response.bodyBytes));
         throw Exception(errorData['detail'] ?? 'Falha ao atualizar token');
       }
     }
   }
 
-  Future<http.Response> makeAuthenticatedRequest(Future<http.Response> Function() request) async {
+  Future<http.Response> makeAuthenticatedRequest(
+      Future<http.Response> Function() request) async {
     int attempts = 0;
     http.Response response;
 
@@ -171,15 +181,15 @@ class ServAutenticacao {
     );
     if (users.isNotEmpty) {
       await _dbSqlite.atualizar(
-        'USUARIO',
-        {
+        tabela: 'USUARIO',
+        valores: {
           'access_token': '',
           'refresh_token': '',
         },
-        column: 'id',
-        valor: users.first['id'],
+        whereClausula: {
+          'id': users.first['id'],
+        },
       );
-
     }
   }
 }
