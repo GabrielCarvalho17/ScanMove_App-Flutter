@@ -27,8 +27,7 @@ class BotaoFinalizar extends StatelessWidget {
   }
 
   Future<void> _finalizarMovimentacao(BuildContext context) async {
-    final movimentacaoProvider =
-        Provider.of<ProvMovimentacao>(context, listen: false);
+    final movimentacaoProvider = Provider.of<ProvMovimentacao>(context, listen: false);
     final movimentacaoAtual = movimentacaoProvider.movimentacaoAtual;
 
     if (movimentacaoAtual == null) {
@@ -40,23 +39,37 @@ class BotaoFinalizar extends StatelessWidget {
       final podeGravar = await movimentacaoProvider.permissaoGravar();
       if (!podeGravar) {
         _mostrarResultadoDialogo(
-            context, "A movimentação não pode ser gravada/finalizada.");
+            context,
+            "A movimentação não pode ser gravada/finalizada."
+        );
         return;
       }
 
       if (movimentacaoAtual.status == 'Inclusão') {
         final resposta = await _mostrarDialogoConfirmacao(
           context,
-          'Deseja iniciar a movimentação?',
+          'Deseja gravar e finalizar a movimentação?',
           'Não',
           'Sim',
         );
 
         if (resposta == true) {
-          await movimentacaoProvider.salvarMovimentacao();
+          await movimentacaoProvider.criarMovimentacao();
+          movimentacaoProvider.finalizarMovimentacao();
           _mostrarResultadoDialogo(
-              context, "Movimentação iniciada com sucesso.");
-          // Não retorna para a tela anterior
+            context,
+            "Movimentação finalizada com sucesso.",
+            onDialogClosed: () {
+              Navigator.of(context).pop(); // Volta para a tela anterior
+              Navigator.of(context).pushNamed('/hist_mov'); // Navega para a tela de histórico
+            },
+          );
+        } else {
+          await movimentacaoProvider.criarMovimentacao();
+          _mostrarResultadoDialogo(
+            context,
+            "Movimentação gravada com sucesso.",
+          );
         }
       } else if (movimentacaoAtual.status == 'Andamento') {
         final resposta = await _mostrarDialogoConfirmacao(
@@ -69,13 +82,15 @@ class BotaoFinalizar extends StatelessWidget {
         if (resposta == true) {
           movimentacaoProvider.finalizarMovimentacao();
           _mostrarResultadoDialogo(
-              context, "Movimentação finalizada com sucesso.",
-              onDialogClosed: () {
-            Navigator.of(context)
-                .pop(); // Volta para a tela anterior após o usuário fechar o diálogo
-            Navigator.of(context)
-                .pushNamed('/hist_mov'); // Navega para a tela de histórico
-          });
+            context,
+            "Movimentação finalizada com sucesso.",
+            onDialogClosed: () {
+              Navigator.of(context).pop(); // Volta para a tela anterior
+              Navigator.of(context).pushNamed('/hist_mov'); // Navega para a tela de histórico
+            },
+          );
+        } else {
+          _mostrarResultadoDialogo(context, "A movimentação não foi finalizada.");
         }
       } else {
         _mostrarResultadoDialogo(context, "Status desconhecido.");
@@ -85,8 +100,7 @@ class BotaoFinalizar extends StatelessWidget {
     }
   }
 
-  Future<bool?> _mostrarDialogoConfirmacao(BuildContext context,
-      String mensagem, String textoBotao1, String textoBotao2) {
+  Future<bool?> _mostrarDialogoConfirmacao(BuildContext context, String mensagem, String textoBotao1, String textoBotao2) {
     return showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -102,8 +116,7 @@ class BotaoFinalizar extends StatelessWidget {
     );
   }
 
-  void _mostrarResultadoDialogo(BuildContext context, String mensagem,
-      {VoidCallback? onDialogClosed}) {
+  void _mostrarResultadoDialogo(BuildContext context, String mensagem, {VoidCallback? onDialogClosed}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

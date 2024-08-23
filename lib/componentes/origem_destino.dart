@@ -166,7 +166,7 @@ class _OrigemDestinoState extends State<OrigemDestino> {
           case StatusLocalizacao.sucesso:
             LocalizacaoModel localizacao = resultado['localizacao'];
             if (isOrigem) {
-              movimentacaoProvider.setOrigem(localizacao.localizacao);
+             await movimentacaoProvider.setOrigem(localizacao.localizacao);
               movimentacaoProvider.setFilialOrigem(localizacao.filial);
             } else {
               movimentacaoProvider.setDestino(localizacao.localizacao);

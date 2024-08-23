@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:AppEstoqueMP/provedores/usuario.dart'; // Importe o provedor de usuário
-import 'package:provider/provider.dart'; // Importe o Provider
+import 'package:AppEstoqueMP/provedores/usuario.dart';
+import 'package:provider/provider.dart';
 import 'package:AppEstoqueMP/componentes/alerta.dart';
 
 class Login extends StatefulWidget {

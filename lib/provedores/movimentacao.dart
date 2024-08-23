@@ -111,38 +111,8 @@ class ProvMovimentacao with ChangeNotifier {
     notifyListeners();
   }
 
-  // Remover movimentação
-  Future<void> removerMovimentacao(Map<String, int> idInfo) async {
-    try {
-      // Extrai a chave e o valor do mapa
-      final String coluna = idInfo.keys.first;
-      final int valor = idInfo.values.first;
-
-      print('Removendo da coluna: $coluna com valor: $valor');
-
-      // Remover do banco de dados usando a coluna correta
-      await _sqlite.deletar(
-        tabela: 'ESTOQUE_MAT_MOV',
-        id: {coluna: valor},
-      );
-
-      // Remover do provedor (lista de movimentações do dia)
-      if (coluna == 'mov_servidor') {
-        _movsDoDia.removeWhere((mov) => mov.movServidor == valor);
-      } else if (coluna == 'mov_sqlite') {
-        _movsDoDia.removeWhere((mov) => mov.movSqlite == valor);
-      }
-
-      notifyListeners();
-    } catch (e) {
-      // Log de erro (opcional)
-      print('Erro ao remover movimentação: $e');
-      throw Exception('Erro ao remover movimentação.');
-    }
-  }
-
   // Define a origem e valida contra o destino e peças
-  void setOrigem(String origem) {
+  Future<void> setOrigem(String origem) async {
     if (_movimentacaoAtual == null) return;
 
     if (origem == _movimentacaoAtual!.destino) {
@@ -159,6 +129,25 @@ class ProvMovimentacao with ChangeNotifier {
     }
 
     _movimentacaoAtual = _movimentacaoAtual!.copyWith(origem: origem);
+
+    if (_movimentacaoAtual?.status == 'Andamento') {
+      try {
+        final camposParaAtualizar = {
+          'origem': origem,
+          'data_modificacao': DateTime.now().toIso8601String(),
+        };
+
+        await _servMovimentacao.atualizarMovimentacao(
+          _movimentacaoAtual!.movServidor,
+          camposParaAtualizar,
+        );
+
+      } catch (e) {
+        // Log de erro (opcional)
+        print('Erro ao sincronizar origem no servidor.');
+        throw Exception('Erro ao sincronizar origem no servidor: $e');
+      }
+    }
     notifyListeners();
   }
 
@@ -190,8 +179,8 @@ class ProvMovimentacao with ChangeNotifier {
     notifyListeners();
   }
 
-// Salva a movimentação (pode ser usada para mover para status "Andamento")
-  Future<void> salvarMovimentacao() async {
+  // Salva a movimentação (pode ser usada para mover para status "Andamento")
+  Future<void> criarMovimentacao() async {
     if (_movimentacaoAtual != null) {
       if (_movimentacaoAtual!.movServidor == 0) {
         _movimentacaoAtual = _movimentacaoAtual!
@@ -264,7 +253,48 @@ class ProvMovimentacao with ChangeNotifier {
     }
   }
 
-// Finaliza a movimentação
+// Método no provedor para remover movimentação
+  Future<void> removerMovimentacao(Map<String, int> idInfo) async {
+    try {
+      // Extrai a chave e o valor do mapa
+      final String coluna = idInfo.keys.first;
+      final int valor = idInfo.values.first;
+
+      print('Removendo da coluna: $coluna com valor: $valor');
+
+      // Chama o serviço para remover a movimentação no servidor
+      final response = await _servMovimentacao.removerMovimentacao(valor);
+
+      // Verifica se a remoção no servidor foi bem-sucedida
+      if (response['status'] == 200 || response['status'] == 204) {
+        // Remover do banco de dados local usando a coluna correta
+        await _sqlite.deletar(
+          tabela: 'ESTOQUE_MAT_MOV',
+          id: {coluna: valor},
+        );
+
+        // Remover da lista de movimentações do dia
+        if (coluna == 'mov_servidor') {
+          _movsDoDia.removeWhere((mov) => mov.movServidor == valor);
+        } else if (coluna == 'mov_sqlite') {
+          _movsDoDia.removeWhere((mov) => mov.movSqlite == valor);
+        }
+
+        print('Movimentação removida com sucesso');
+      } else {
+        print(
+            'Erro ao remover movimentação no servidor: ${response['message']}');
+      }
+
+      notifyListeners();
+    } catch (e) {
+      // Log de erro (opcional)
+      print('Erro ao remover movimentação: $e');
+      throw Exception('Erro ao remover movimentação.');
+    }
+  }
+
+  // Finaliza a movimentação
   Future<void> finalizarMovimentacao() async {
     final dataModificacao = DateTime.now().toIso8601String();
     if (_movimentacaoAtual != null &&
@@ -319,7 +349,7 @@ class ProvMovimentacao with ChangeNotifier {
   }
 
   // Método para buscar uma movimentação por ID
-  MovimentacaoModel? getMovimentacaoPorId(int id) {
+  MovimentacaoModel? obterMovimentacaoPorId(int id) {
     try {
       return _movsDoDia.firstWhere(
         (mov) => mov.movServidor == id || mov.movSqlite == id,

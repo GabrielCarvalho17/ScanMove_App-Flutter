@@ -107,6 +107,7 @@ class _HistMovState extends State<HistMov> {
               padding: EdgeInsets.only(top: 16, bottom: 80),
               itemCount: movimentacaoProvider.movsDoDia.length,
               itemBuilder: (context, index) {
+                movimentacaoProvider.movsDoDia.sort((a, b) => a.status.compareTo(b.status)); // Ordenação por status
                 final mov = movimentacaoProvider.movsDoDia[index];
                 return GestureDetector(
                   onTap: () {

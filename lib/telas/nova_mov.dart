@@ -63,7 +63,7 @@ class _NovaMovState extends State<NovaMov> {
 
       if (widget.id != null) {
         final movimentacao =
-            movimentacaoProvider.getMovimentacaoPorId(widget.id!);
+            movimentacaoProvider.obterMovimentacaoPorId(widget.id!);
         if (movimentacao != null) {
           movimentacaoProvider.setMovimentacaoAtual(movimentacao);
           statusFinalizada = movimentacao.status == 'Finalizada';

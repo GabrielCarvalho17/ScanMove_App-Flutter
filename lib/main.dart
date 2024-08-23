@@ -11,13 +11,13 @@ void main() async {
   final provUsuario = ProvUsuario();
   await provUsuario.loadUserOnInit();
 
-  runApp(MyApp(provUsuario: provUsuario));
+  runApp(MeuApp(provUsuario: provUsuario));
 }
 
-class MyApp extends StatelessWidget {
+class MeuApp extends StatelessWidget {
   final ProvUsuario provUsuario;
 
-  MyApp({required this.provUsuario});
+  MeuApp({required this.provUsuario});
 
   @override
   Widget build(BuildContext context) {
