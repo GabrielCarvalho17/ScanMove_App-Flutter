@@ -15,7 +15,7 @@ class CustomDrawer extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: <Widget>[
           Container(
-            height: 200.0,
+            height: 210.0,
             child: DrawerHeader(
               decoration: BoxDecoration(
                 color: Color(0xFF212529),
@@ -35,10 +35,12 @@ class CustomDrawer extends StatelessWidget {
                       ),
                       radius: 40,
                     ),
-                    SizedBox(height: 15),
-                    Text(
-                      provUsuario.username,
-                      style: TextStyle(color: Colors.white, fontSize: 20),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        provUsuario.username,
+                        style: TextStyle(color: Colors.white, fontSize: 20),
+                      ),
                     ),
                   ],
                 ),
