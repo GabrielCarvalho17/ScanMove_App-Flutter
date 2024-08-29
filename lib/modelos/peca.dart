@@ -1,6 +1,6 @@
 class PecaModel {
   final String peca;
-  final String partida;
+  final String? partida;
   final String material;
   final String descMaterial;
   final String corMaterial;
@@ -12,7 +12,7 @@ class PecaModel {
 
   PecaModel({
     required this.peca,
-    required this.partida,
+    this.partida,
     required this.material,
     required this.descMaterial,
     required this.corMaterial,

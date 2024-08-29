@@ -23,6 +23,24 @@ class MovimentacaoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Definindo cores e estilos para diferentes status
+    Color statusColor;
+    Color textColor;
+
+    switch (status) {
+      case 'Finalizada':
+        statusColor = Theme.of(context).colorScheme.primary;
+        textColor = Colors.white;
+        break;
+      // case 'Erro':
+      //   statusColor = Color(0xFFdc3545);  // Cor de fundo para status "Falha"
+      //   textColor = Colors.white;  // Cor do texto para status "Falha"
+      //   break;
+      default:
+        statusColor = Color(0xFFb9bdbf); // Cor padrão para outros status
+        textColor = Theme.of(context).colorScheme.primary;
+    }
+
     return GestureDetector(
       onTap: () {
         Navigator.pushNamed(
@@ -35,7 +53,7 @@ class MovimentacaoCard extends StatelessWidget {
         );
       },
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(15, 0, 15, 6),
+        padding: const EdgeInsets.fromLTRB(15, 0, 15, 0),
         child: Card(
           color: Colors.white,
           elevation: 4,
@@ -66,7 +84,7 @@ class MovimentacaoCard extends StatelessWidget {
                       ),
                     ]),
                     Text(
-                      DateFormat('dd/MM/yyyy HH:mm').format(data),
+                      DateFormat('dd/MM/yyyy HH:mm').format(data.toLocal()),
                       style: TextStyle(color: Colors.grey[600], fontSize: 15),
                     ),
                   ],
@@ -98,13 +116,11 @@ class MovimentacaoCard extends StatelessWidget {
                         vertical: 4.0,
                       ),
                       decoration: BoxDecoration(
-                        color: status == 'Finalizada'
-                            ? Theme.of(context).colorScheme.primary
-                            : Color(0xFFb9bdbf),
+                        color: statusColor,
                         borderRadius: BorderRadius.circular(4.0),
                       ),
                       constraints: BoxConstraints(
-                        minWidth: 95, // Definir uma largura mínima para o contêiner
+                        minWidth: 95,
                       ),
                       alignment: Alignment.center,
                       child: Text(
@@ -112,9 +128,7 @@ class MovimentacaoCard extends StatelessWidget {
                         style: TextStyle(
                           fontWeight: FontWeight.w500,
                           fontSize: 15,
-                          color: status == 'Finalizada'
-                              ? Colors.white
-                              : Theme.of(context).colorScheme.primary,
+                          color: textColor,
                         ),
                       ),
                     ),

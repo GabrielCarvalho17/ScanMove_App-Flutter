@@ -57,7 +57,7 @@ class SQLite {
           'peca VARCHAR(6) NOT NULL,'
           'material VARCHAR(11) NOT NULL,'
           'cor_material VARCHAR(10) NOT NULL,'
-          'partida VARCHAR(6) NOT NULL,'
+          'partida VARCHAR(6),'
           'unidade VARCHAR(5) NOT NULL,'
           'quantidade REAL,'
           'desc_material TEXT,'
@@ -101,9 +101,11 @@ class SQLite {
   }
 
   Future<int> atualizar({
-    required String tabela,                    // Nome da tabela
-    required Map<String, dynamic> valores,     // Mapa de colunas e valores a serem atualizados
-    required Map<String, dynamic> whereClausula, // Mapa de colunas e valores para a cláusula WHERE
+    required String tabela, // Nome da tabela
+    required Map<String, dynamic>
+        valores, // Mapa de colunas e valores a serem atualizados
+    required Map<String, dynamic>
+        whereClausula, // Mapa de colunas e valores para a cláusula WHERE
   }) async {
     final db = await bancoDados;
 
@@ -111,7 +113,8 @@ class SQLite {
     String setClausula = valores.keys.map((key) => '$key = ?').join(', ');
 
     // Construir a string de WHERE usando a cláusula fornecida
-    String whereClausulaString = whereClausula.keys.map((key) => '$key = ?').join(' AND ');
+    String whereClausulaString =
+        whereClausula.keys.map((key) => '$key = ?').join(' AND ');
 
     // Combinar os valores de atualização com os valores do WHERE em uma única lista de argumentos
     List<dynamic> argumentos = [...valores.values, ...whereClausula.values];
@@ -121,7 +124,6 @@ class SQLite {
       argumentos,
     );
   }
-
 
   Future<int> deletar({
     required String tabela,

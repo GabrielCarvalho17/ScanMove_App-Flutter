@@ -44,8 +44,6 @@ class ProvMovimentacao with ChangeNotifier {
         _ultimaCarga = DateFormat('dd-MM-yyyy').format(DateTime.now());
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('ultimaCarga', _ultimaCarga!);
-      } else {
-        throw Exception('Erro ao carregar movimentações.');
       }
     } catch (e, stackTrace) {
       print('Erro ao carregar movimentações: $e');
@@ -141,7 +139,6 @@ class ProvMovimentacao with ChangeNotifier {
           _movimentacaoAtual!.movServidor,
           camposParaAtualizar,
         );
-
       } catch (e) {
         // Log de erro (opcional)
         print('Erro ao sincronizar origem no servidor.');
@@ -208,45 +205,48 @@ class ProvMovimentacao with ChangeNotifier {
       int movSqliteId = await db.insert('ESTOQUE_MAT_MOV', movimentacaoMap);
       print('ID da movimentação no SQLite: $movSqliteId');
 
-      // Chamar o método para criar a movimentação no servidor
-      final response =
-          await _servMovimentacao.criarMovimentacao(_movimentacaoAtual!);
+      // Persistir as peças associadas à movimentação localmente
+      for (var peca in mov.pecas) {
+        final pecaMap = {
+          'peca': peca.peca,
+          'material': peca.material,
+          'cor_material': peca.corMaterial,
+          'partida': peca.partida,
+          'unidade': peca.unidade,
+          'quantidade': peca.quantidade,
+          'mov_sqlite': movSqliteId,
+          'desc_material': peca.descMaterial,
+          'desc_cor_material': peca.descCorMaterial,
+          'localizacao': peca.localizacao,
+          'filial': peca.filial,
+        };
 
-      if (response['status'] == 200 || response['status'] == 201) {
-        // Atualizar o mov_servidor com o ID retornado do servidor
-        int movServidorId = response['data']['mov_servidor'];
-        _movimentacaoAtual =
-            _movimentacaoAtual!.copyWith(movServidor: movServidorId);
+        await db.insert('ESTOQUE_MAT_MOV_PECA', pecaMap);
+      }
+      try {
+        // Chamar o método para criar a movimentação no servidor
+        final response =
+            await _servMovimentacao.criarMovimentacao(_movimentacaoAtual!);
 
-        // Atualizar o registro no SQLite com o ID do servidor usando o método atualizar
-        await _sqlite.atualizar(
-          tabela: 'ESTOQUE_MAT_MOV',
-          valores: {'mov_servidor': movServidorId},
-          whereClausula: {'mov_sqlite': movSqliteId},
-        );
+        if (response['status'] == 200 || response['status'] == 201) {
+          // Atualizar o mov_servidor com o ID retornado do servidor
+          int movServidorId = response['data']['mov_servidor'];
+          _movimentacaoAtual =
+              _movimentacaoAtual!.copyWith(movServidor: movServidorId);
 
-        print('Movimentação atualizada com mov_servidor: $movServidorId');
-
-        // Persistir as peças associadas à movimentação localmente
-        for (var peca in mov.pecas) {
-          final pecaMap = {
-            'peca': peca.peca,
-            'material': peca.material,
-            'cor_material': peca.corMaterial,
-            'partida': peca.partida,
-            'unidade': peca.unidade,
-            'quantidade': peca.quantidade,
-            'mov_sqlite': movSqliteId,
-            'desc_material': peca.descMaterial,
-            'desc_cor_material': peca.descCorMaterial,
-            'localizacao': peca.localizacao,
-            'filial': peca.filial,
-          };
-
-          await db.insert('ESTOQUE_MAT_MOV_PECA', pecaMap);
+          print('Movimentação atualizada com mov_servidor: $movServidorId');
+          // Atualizar o registro no SQLite com o ID do servidor usando o método atualizar
+          await _sqlite.atualizar(
+            tabela: 'ESTOQUE_MAT_MOV',
+            valores: {'mov_servidor': movServidorId},
+            whereClausula: {'mov_sqlite': movSqliteId},
+          );
+        } else {
+          print(
+              'Erro ao criar movimentação no servidor: ${response['message']}');
         }
-      } else {
-        print('Erro ao criar movimentação no servidor: ${response['message']}');
+      } catch (e) {
+        print('Ocorreu um erro: $e');
       }
 
       notifyListeners();
@@ -497,6 +497,20 @@ class ProvMovimentacao with ChangeNotifier {
         }, // Mapa opcional para a FK
       );
 
+      // Determina a cláusula WHERE e o valor correspondente
+      String whereCampo;
+      int whereValor;
+
+      if (movimentacaoAtual!.movServidor != null &&
+          movimentacaoAtual!.movServidor != 0) {
+        whereCampo = 'mov_servidor';
+        whereValor = movimentacaoAtual!.movServidor!;
+      } else {
+        whereCampo = 'mov_sqlite';
+        whereValor = movimentacaoAtual!.movSqlite;
+      }
+
+      // Atualiza o banco de dados local
       await _sqlite.atualizar(
         tabela: 'ESTOQUE_MAT_MOV',
         valores: {
@@ -505,13 +519,7 @@ class ProvMovimentacao with ChangeNotifier {
               dataModificacao, // Atualiza a data de modificação no banco de dados local
         },
         whereClausula: {
-          (movimentacaoAtual!.movServidor != null &&
-                  movimentacaoAtual!.movServidor != 0)
-              ? 'mov_servidor'
-              : 'mov_sqlite': (movimentacaoAtual!.movServidor != null &&
-                  movimentacaoAtual!.movServidor != 0)
-              ? movimentacaoAtual!.movServidor
-              : movimentacaoAtual!.movSqlite,
+          whereCampo: whereValor,
         },
       );
 
@@ -532,7 +540,7 @@ class ProvMovimentacao with ChangeNotifier {
         }
       } catch (e) {
         // Captura qualquer erro durante a sincronização com o servidor
-        print('Erro ao se comunicar com o servidor: $e');
+        print('Erro: $e');
       }
     }
 

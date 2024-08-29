@@ -123,7 +123,7 @@ class _HistMovState extends State<HistMov> {
                     key: Key(mov.movServidor != 0
                         ? mov.movServidor.toString()
                         : 'sqlite_${mov.movSqlite}'),
-                    direction: DismissDirection.endToStart,
+                    direction: DismissDirection.horizontal,
                     confirmDismiss: (direction) async {
                       if (direction == DismissDirection.endToStart) {
                         return await _confirmDismiss(context, mov);
@@ -133,8 +133,7 @@ class _HistMovState extends State<HistMov> {
                     onDismissed: (direction) async {
                       if (direction == DismissDirection.endToStart) {
                         final movimentacaoProvider =
-                            Provider.of<ProvMovimentacao>(context,
-                                listen: false);
+                        Provider.of<ProvMovimentacao>(context, listen: false);
 
                         // Remova a movimentação da lista de movimentações visíveis
                         setState(() {
@@ -152,7 +151,13 @@ class _HistMovState extends State<HistMov> {
                       }
                     },
                     background: Container(
-                      color: Theme.of(context).colorScheme.primary,
+                      color:  Color(0xFFb9bdbf), // Cor de fundo verde ao arrastar para a direita (sincronização)
+                      alignment: Alignment.centerLeft,
+                      padding: EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Icon(Icons.sync, color: Theme.of(context).colorScheme.primary),
+                    ),
+                    secondaryBackground: Container(
+                      color: Theme.of(context).colorScheme.primary, // Cor de fundo vermelha ao arrastar para a esquerda (exclusão)
                       alignment: Alignment.centerRight,
                       padding: EdgeInsets.symmetric(horizontal: 20.0),
                       child: Icon(Icons.delete, color: Colors.white),
@@ -167,6 +172,7 @@ class _HistMovState extends State<HistMov> {
                       status: mov.status,
                     ),
                   ),
+
                 );
               },
             );
