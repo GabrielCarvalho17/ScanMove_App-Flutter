@@ -1,5 +1,5 @@
 
-# ScanMove (App de Gestão de Estoque de Matéria-Prima)
+# ScanMove (App para o Estoque de Matéria-Prima)
 
 **ScanMove** é um aplicativo Android desenvolvido em Flutter, projetado para facilitar a movimentação de matéria-prima no estoque de tecidos de fábricas. Seu principal objetivo é agilizar o fluxo de trabalho dos operadores, eliminando a necessidade de anotações manuais em planilhas e a posterior inserção de dados no sistema ERP.
 
