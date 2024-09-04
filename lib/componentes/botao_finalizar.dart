@@ -10,6 +10,7 @@ class BotaoFinalizar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final movimentacaoProvider = Provider.of<ProvMovimentacao>(context, listen: false);
     return FloatingActionButton(
       onPressed: () => _finalizarMovimentacao(context),
       backgroundColor: Theme.of(context).primaryColor,
@@ -19,6 +20,7 @@ class BotaoFinalizar extends StatelessWidget {
         borderRadius: BorderRadius.circular(50.0),
       ),
       child: Icon(
+
         Icons.arrow_forward,
         color: Colors.white,
       ),
@@ -49,8 +51,8 @@ class BotaoFinalizar extends StatelessWidget {
         final resposta = await _mostrarDialogoConfirmacao(
           context,
           'Deseja gravar e finalizar a movimentação?',
-          'Não',
-          'Sim',
+          'Gravar',
+          'Finalizar',
         );
 
         if (resposta == true) {

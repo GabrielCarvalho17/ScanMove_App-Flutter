@@ -14,14 +14,24 @@ class HistMov extends StatefulWidget {
   _HistMovState createState() => _HistMovState();
 }
 
-class _HistMovState extends State<HistMov> {
+class _HistMovState extends State<HistMov> with TickerProviderStateMixin {
   late ScrollController _scrollController;
   bool _showScrollToTopButton = false;
   bool _isInitialLoad = true;
+  bool _isDeleting = false;
+  late final AnimationController controller;
 
   @override
   void initState() {
     super.initState();
+
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..addListener(() {
+        setState(() {});
+      });
+    controller.repeat(reverse: false);
 
     _scrollController = ScrollController()
       ..addListener(() {
@@ -29,6 +39,13 @@ class _HistMovState extends State<HistMov> {
           _showScrollToTopButton = _scrollController.offset > 200;
         });
       });
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -107,7 +124,8 @@ class _HistMovState extends State<HistMov> {
               padding: EdgeInsets.only(top: 16, bottom: 80),
               itemCount: movimentacaoProvider.movsDoDia.length,
               itemBuilder: (context, index) {
-                movimentacaoProvider.movsDoDia.sort((a, b) => a.status.compareTo(b.status)); // Ordenação por status
+                movimentacaoProvider.movsDoDia.sort((a, b) =>
+                    a.status.compareTo(b.status)); // Ordenação por response
                 final mov = movimentacaoProvider.movsDoDia[index];
                 return GestureDetector(
                   onTap: () {
@@ -123,44 +141,125 @@ class _HistMovState extends State<HistMov> {
                     key: Key(mov.movServidor != 0
                         ? mov.movServidor.toString()
                         : 'sqlite_${mov.movSqlite}'),
-                    direction: DismissDirection.horizontal,
+                    direction: DismissDirection.endToStart,
                     confirmDismiss: (direction) async {
                       if (direction == DismissDirection.endToStart) {
-                        return await _confirmDismiss(context, mov);
+                        final teste = await _confirmDismiss(context, mov);
+                        if (teste) {
+                          setState(() {
+                            _isDeleting = true; // Iniciar animação
+                          });
+
+                          final movimentacaoProvider =
+                              Provider.of<ProvMovimentacao>(context,
+                                  listen: false);
+                          try {
+                            final response = await movimentacaoProvider
+                                .removerMovimentacao(mov);
+
+                            setState(() {
+                              _isDeleting =
+                                  false; // Encerrar animação em caso de sucesso
+                            });
+
+                            if (response['status'] == 200 ||
+                                response['status'] == 204) {
+                              return true;
+                            } else {
+                              await showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return CustomDialogo(
+                                    titulo: 'Erro',
+                                    mensagem: response['error'],
+                                  );
+                                },
+                              );
+                              return false;
+                            }
+                          } catch (e) {
+                            await showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return CustomDialogo(
+                                  titulo: 'Erro',
+                                  mensagem: e.toString(),
+                                );
+                              },
+                            );
+                            setState(() {
+                              _isDeleting =
+                                  false; // Encerrar animação em caso de erro
+                            });
+                            return false;
+                          }
+                        }
                       }
                       return false;
                     },
                     onDismissed: (direction) async {
                       if (direction == DismissDirection.endToStart) {
-                        final movimentacaoProvider =
-                        Provider.of<ProvMovimentacao>(context, listen: false);
-
-                        // Remova a movimentação da lista de movimentações visíveis
                         setState(() {
                           movimentacaoProvider.movsDoDia.removeAt(index);
                         });
-
-                        // Remova do banco de dados, utilizando o id e coluna corretos
-                        if (mov.movServidor == 0) {
-                          await movimentacaoProvider.removerMovimentacao(
-                              {'mov_sqlite': mov.movSqlite});
-                        } else {
-                          await movimentacaoProvider.removerMovimentacao(
-                              {'mov_servidor': mov.movServidor});
-                        }
                       }
                     },
                     background: Container(
-                      color:  Color(0xFFb9bdbf), // Cor de fundo verde ao arrastar para a direita (sincronização)
-                      alignment: Alignment.centerLeft,
-                      padding: EdgeInsets.symmetric(horizontal: 20.0),
-                      child: Icon(Icons.sync, color: Theme.of(context).colorScheme.primary),
-                    ),
-                    secondaryBackground: Container(
-                      color: Theme.of(context).colorScheme.primary, // Cor de fundo vermelha ao arrastar para a esquerda (exclusão)
+                      color: Theme.of(context).colorScheme.primary,
                       alignment: Alignment.centerRight,
                       padding: EdgeInsets.symmetric(horizontal: 20.0),
-                      child: Icon(Icons.delete, color: Colors.white),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          SizedBox(height: 13), // Espaço superior
+                          Icon(Icons.delete,
+                              color: Colors.white), // Ícone da lixeira no meio
+                          if (!_isDeleting)
+                            SizedBox(
+                                height:
+                                    12), // Espaço inferior equivalente à barra de carregamento
+                          if (_isDeleting)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                  bottom: 8.0), // Mantém a barra no fundo
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    height: 4.0,
+                                    color: Color(
+                                        0xFF212529), // Cor do fundo da barra de progresso
+                                  ),
+                                  AnimatedBuilder(
+                                    animation: controller,
+                                    builder: (context, child) {
+                                      final screenWidth =
+                                          MediaQuery.of(context).size.width;
+                                      final startOffset = -100.0;
+                                      return Transform.translate(
+                                        offset: Offset(
+                                          startOffset +
+                                              (controller.value *
+                                                  (screenWidth + 100)),
+                                          0,
+                                        ),
+                                        child: Container(
+                                          width: 100,
+                                          height: 4.0,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                     child: MovimentacaoCard(
                       id: mov.movServidor,
@@ -172,7 +271,6 @@ class _HistMovState extends State<HistMov> {
                       status: mov.status,
                     ),
                   ),
-
                 );
               },
             );

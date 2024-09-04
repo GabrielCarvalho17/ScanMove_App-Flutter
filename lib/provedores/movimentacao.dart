@@ -253,44 +253,37 @@ class ProvMovimentacao with ChangeNotifier {
     }
   }
 
-// Método no provedor para remover movimentação
-  Future<void> removerMovimentacao(Map<String, int> idInfo) async {
-    try {
-      // Extrai a chave e o valor do mapa
-      final String coluna = idInfo.keys.first;
-      final int valor = idInfo.values.first;
+  // Método no provedor para remover movimentação
+  Future removerMovimentacao(MovimentacaoModel mov) async {
+    // Determina a coluna e o valor com base no objeto mov
+    final int id = mov.movServidor != 0 ? mov.movServidor : mov.movSqlite;
+    final String coluna = mov.movServidor != 0 ? 'mov_servidor' : 'mov_sqlite';
 
-      print('Removendo da coluna: $coluna com valor: $valor');
+    try {
+      print('Removendo da coluna: $coluna com valor: $id');
 
       // Chama o serviço para remover a movimentação no servidor
-      final response = await _servMovimentacao.removerMovimentacao(valor);
-
+      final response = await _servMovimentacao.removerMovimentacao(id);
       // Verifica se a remoção no servidor foi bem-sucedida
       if (response['status'] == 200 || response['status'] == 204) {
         // Remover do banco de dados local usando a coluna correta
         await _sqlite.deletar(
           tabela: 'ESTOQUE_MAT_MOV',
-          id: {coluna: valor},
+          id: {coluna: id},
         );
-
         // Remover da lista de movimentações do dia
-        if (coluna == 'mov_servidor') {
-          _movsDoDia.removeWhere((mov) => mov.movServidor == valor);
-        } else if (coluna == 'mov_sqlite') {
-          _movsDoDia.removeWhere((mov) => mov.movSqlite == valor);
-        }
+        _movsDoDia.remove(mov);
 
-        print('Movimentação removida com sucesso');
+        notifyListeners();
+        return response;
       } else {
-        print(
-            'Erro ao remover movimentação no servidor: ${response['message']}');
+        notifyListeners();
+        return response;
       }
 
-      notifyListeners();
     } catch (e) {
-      // Log de erro (opcional)
-      print('Erro ao remover movimentação: $e');
-      throw Exception('Erro ao remover movimentação.');
+      notifyListeners();
+      throw Exception(e);
     }
   }
 

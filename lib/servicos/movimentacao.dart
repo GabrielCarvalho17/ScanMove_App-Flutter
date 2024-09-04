@@ -240,14 +240,23 @@ class ServMovimentacao {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      );
+      ).timeout(const Duration(seconds: 5), onTimeout: () {
+        return http.Response('O servidor demorou demais para responder. Tente novamente mais tarde.', 408);
+      });
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         return {
           'status': response.statusCode,
           'message': 'Movimentação removida com sucesso'
         };
-      } else {
+      }else if (response.statusCode == 408){
+        return {
+          'status': response.statusCode,
+          'message': 'Erro ao remover movimentação',
+          'error': response.body
+        };
+      }
+      else {
         return {
           'status': response.statusCode,
           'message': 'Erro ao remover movimentação',
@@ -255,11 +264,7 @@ class ServMovimentacao {
         };
       }
     } catch (e) {
-      return {
-        'status': 'error',
-        'message': 'Erro ao se comunicar com o servidor',
-        'error': e.toString()
-      };
+      throw Exception('Ocorreu um erro: $e');
     }
   }
 
