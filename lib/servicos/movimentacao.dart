@@ -241,7 +241,9 @@ class ServMovimentacao {
           'Authorization': 'Bearer $token',
         },
       ).timeout(const Duration(seconds: 5), onTimeout: () {
-        return http.Response('O servidor demorou demais para responder. Tente novamente mais tarde.', 408);
+        return http.Response(
+            'O servidor demorou demais para responder. Tente novamente mais tarde.',
+            408);
       });
 
       if (response.statusCode == 200 || response.statusCode == 204) {
@@ -249,14 +251,13 @@ class ServMovimentacao {
           'status': response.statusCode,
           'message': 'Movimentação removida com sucesso'
         };
-      }else if (response.statusCode == 408){
+      } else if (response.statusCode == 408) {
         return {
           'status': response.statusCode,
           'message': 'Erro ao remover movimentação',
           'error': response.body
         };
-      }
-      else {
+      } else {
         return {
           'status': response.statusCode,
           'message': 'Erro ao remover movimentação',
@@ -321,26 +322,32 @@ class ServMovimentacao {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      );
+      ).timeout(const Duration(seconds: 5), onTimeout: () {
+        return http.Response(
+            'O servidor demorou demais para responder. Tente novamente mais tarde.',
+            408);
+      });
 
-      if (response.statusCode == 204) {
+      if (response.statusCode == 200 || response.statusCode == 204) {
         return {
           'status': response.statusCode,
-          'message': 'Peças excluídas com sucesso'
+          'message': 'Peça removida com sucesso'
+        };
+      } else if (response.statusCode == 408) {
+        return {
+          'status': response.statusCode,
+          'message': 'Erro ao remover peça.',
+          'error': response.body
         };
       } else {
         return {
           'status': response.statusCode,
-          'message': 'Erro ao excluir peças',
+          'message': 'Erro ao remover peça.',
           'error': response.body
         };
       }
     } catch (e) {
-      return {
-        'status': 'error',
-        'message': 'Erro ao se comunicar com o servidor',
-        'error': e.toString()
-      };
+      throw Exception('Ocorreu um erro: $e');
     }
   }
 

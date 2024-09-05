@@ -11,6 +11,9 @@ import 'package:AppEstoqueMP/componentes/origem_destino.dart';
 import 'package:AppEstoqueMP/componentes/dialogo.dart';
 import 'package:provider/provider.dart';
 
+import '../modelos/movimentacao.dart';
+import '../modelos/peca.dart';
+
 class NovaMov extends StatefulWidget {
   final int? id;
 
@@ -20,12 +23,14 @@ class NovaMov extends StatefulWidget {
   _NovaMovState createState() => _NovaMovState();
 }
 
-class _NovaMovState extends State<NovaMov> {
+class _NovaMovState extends State<NovaMov> with TickerProviderStateMixin {
   late ScrollController _scrollController;
   bool _showScrollToTopButton = false;
   bool _isInitialized = false;
   late ProvMovimentacao movimentacaoProvider;
   bool statusFinalizada = false;
+  bool _isDeleting = false;
+  late final AnimationController controller;
 
   @override
   void initState() {
@@ -40,6 +45,21 @@ class _NovaMovState extends State<NovaMov> {
         _isInitialized = true;
       });
     });
+
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..addListener(() {
+        setState(() {});
+      });
+    controller.repeat(reverse: false);
+
+    _scrollController = ScrollController()
+      ..addListener(() {
+        setState(() {
+          _showScrollToTopButton = _scrollController.offset > 200;
+        });
+      });
   }
 
   void _onScroll() {
@@ -52,6 +72,13 @@ class _NovaMovState extends State<NovaMov> {
         _showScrollToTopButton = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -74,11 +101,27 @@ class _NovaMovState extends State<NovaMov> {
     });
   }
 
-  Future<void> _mostrarDialogoExclusao(BuildContext context, int index) async {
-    final peca = movimentacaoProvider.movimentacaoAtual!.pecas[index];
-    final idPeca = peca.peca.toString();
+  Future<bool> _confirmDismiss(BuildContext context, PecaModel peca,
+      MovimentacaoModel movimentacao) async {
+    // Verifica se a movimentação está finalizada, então não pode excluir a peça
+    if (movimentacao.status == 'Finalizada') {
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return CustomDialogo(
+            titulo: 'Ação Impossível',
+            mensagem:
+                'Não é possível excluir uma peça de uma movimentação finalizada.',
+          );
+        },
+      );
+      return false; // Não permitir exclusão
+    }
 
-    final shouldDelete = await showDialog(
+    bool shouldDelete = false;
+
+    // Exibir diálogo de confirmação de exclusão da peça
+    await showDialog(
       context: context,
       builder: (BuildContext context) {
         return CustomDialogo(
@@ -86,22 +129,20 @@ class _NovaMovState extends State<NovaMov> {
           mensagem: 'Você realmente deseja excluir esta peça?',
           textoBotao1: 'Cancelar',
           onBotao1Pressed: () {
-            Navigator.of(context).pop(false);
+            shouldDelete = false; // Cancelar exclusão
+            Navigator.of(context).pop();
           },
           textoBotao2: 'Excluir',
           onBotao2Pressed: () {
-            Navigator.of(context).pop(true);
+            shouldDelete = true; // Confirmar exclusão
+            Navigator.of(context).pop();
           },
         );
       },
     );
 
-    if (shouldDelete == true) {
-      setState(() {
-        movimentacaoProvider.removerPeca(idPeca);
-        print(movimentacaoProvider.toString());
-      });
-    }
+    // Retorna se o usuário confirmou ou cancelou a exclusão
+    return shouldDelete;
   }
 
   @override
@@ -111,7 +152,7 @@ class _NovaMovState extends State<NovaMov> {
         onPopInvoked: (didPop) async {
           // Substitui a funcionalidade do onWillPop
           final movimentacaoProvider =
-          Provider.of<ProvMovimentacao>(context, listen: false);
+              Provider.of<ProvMovimentacao>(context, listen: false);
           await movimentacaoProvider.verificarERecarregarMovs();
           print(movimentacaoProvider.toString());
 
@@ -131,7 +172,7 @@ class _NovaMovState extends State<NovaMov> {
         onPopInvoked: (didPop) async {
           // Substitui a funcionalidade do onWillPop
           final movimentacaoProvider =
-          Provider.of<ProvMovimentacao>(context, listen: false);
+              Provider.of<ProvMovimentacao>(context, listen: false);
           await movimentacaoProvider.verificarERecarregarMovs();
           print(movimentacaoProvider.toString());
 
@@ -165,19 +206,136 @@ class _NovaMovState extends State<NovaMov> {
                         direction: DismissDirection.endToStart,
                         confirmDismiss: (direction) async {
                           if (direction == DismissDirection.endToStart) {
-                            await _mostrarDialogoExclusao(context, index);
+                            final confirmacao = await _confirmDismiss(context,
+                                item, movimentacaoProvider.movimentacaoAtual!);
+
+                            if (confirmacao) {
+                              setState(() {
+                                _isDeleting =
+                                    true; // Iniciar animação de exclusão
+                              });
+
+                              final movimentacaoProvider =
+                                  Provider.of<ProvMovimentacao>(context,
+                                      listen: false);
+
+                              try {
+                                // Chama o método para remover a peça
+                                final response = await movimentacaoProvider
+                                    .removerPeca(item.peca);
+
+                                setState(() {
+                                  _isDeleting =
+                                      false; // Para a animação após a conclusão
+                                });
+
+                                // Verifica a resposta do servidor
+                                if (response['status'] == 200 ||
+                                    response['status'] == 204) {
+                                  return true; // Permite a remoção visual do item
+                                } else {
+                                  // Exibe um diálogo em caso de erro na remoção
+                                  await showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return CustomDialogo(
+                                        titulo: 'Erro',
+                                        mensagem: response['error'],
+                                      );
+                                    },
+                                  );
+                                  return false;
+                                }
+                              } catch (e) {
+                                // Trata erros durante a exclusão
+                                setState(() {
+                                  _isDeleting =
+                                      false; // Para a animação em caso de erro
+                                });
+
+                                // Exibe um diálogo de erro
+                                await showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return CustomDialogo(
+                                      titulo: 'Erro',
+                                      mensagem: e.toString(),
+                                    );
+                                  },
+                                );
+                                return false;
+                              }
+                            }
                             return false;
                           }
                           return false;
                         },
+                        onDismissed: (direction) async {
+                          if (direction == DismissDirection.endToStart) {
+                            // Remove a peça da lista local após a confirmação de sucesso
+                            setState(() {
+                              movimentacaoProvider.movimentacaoAtual!.pecas
+                                  .removeAt(index);
+                            });
+                          }
+                        },
                         background: Container(
                           color: Theme.of(context).colorScheme.primary,
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Icon(Icons.delete, color: Colors.white),
-                            ),
+                          alignment: Alignment.centerRight,
+                          margin: EdgeInsets.only(bottom: 9, top: 3),
+                          padding: EdgeInsets.symmetric(horizontal: 20.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              SizedBox(height: 13), // Espaço superior
+                              Icon(Icons.delete,
+                                  color:
+                                      Colors.white), // Ícone da lixeira no meio
+                              if (!_isDeleting)
+                                SizedBox(
+                                    height:
+                                        12), // Espaço inferior equivalente à barra de carregamento
+                              if (_isDeleting)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      bottom: 8.0), // Mantém a barra no fundo
+                                  child: Stack(
+                                    children: [
+                                      Container(
+                                        height: 4.0,
+                                        color: Color(
+                                            0xFF212529), // Cor do fundo da barra de progresso
+                                      ),
+                                      AnimatedBuilder(
+                                        animation: controller,
+                                        builder: (context, child) {
+                                          final screenWidth =
+                                              MediaQuery.of(context).size.width;
+                                          final startOffset = -100.0;
+                                          return Transform.translate(
+                                            offset: Offset(
+                                              startOffset +
+                                                  (controller.value *
+                                                      (screenWidth + 100)),
+                                              0,
+                                            ),
+                                            child: Container(
+                                              width: 100,
+                                              height: 4.0,
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(5),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                         child: Peca(
@@ -232,7 +390,8 @@ class _NovaMovState extends State<NovaMov> {
                     ),
                   ],
                 ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerFloat,
         ),
       ),
     );

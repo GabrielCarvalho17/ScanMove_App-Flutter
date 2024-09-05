@@ -280,7 +280,6 @@ class ProvMovimentacao with ChangeNotifier {
         notifyListeners();
         return response;
       }
-
     } catch (e) {
       notifyListeners();
       throw Exception(e);
@@ -456,88 +455,69 @@ class ProvMovimentacao with ChangeNotifier {
   }
 
   // Método para remover peças da movimentação atual
+  Future<Map<String, dynamic>> removerPeca(String pecaId) async {
+    final int idMov = _movimentacaoAtual!.movServidor != 0
+        ? _movimentacaoAtual!.movServidor!
+        : _movimentacaoAtual!.movSqlite;
+    final String colunaMov =
+        _movimentacaoAtual!.movServidor != 0 ? 'mov_servidor' : 'mov_sqlite';
+    final String dataModificacao =
+        DateTime.now().toIso8601String(); // Data de modificação atual
 
-  Future<void> removerPeca(String pecaId) async {
-    print(_movimentacaoAtual?.status);
+    try {
+      print('Removendo a peça $pecaId da movimentação $idMov ($colunaMov)');
 
-    if (_movimentacaoAtual == null) return;
-
-    final dataModificacao =
-        DateTime.now().toIso8601String(); // Obtém a data de modificação atual
-
-    if (_movimentacaoAtual!.status == 'Inclusão') {
-      _movimentacaoAtual = _movimentacaoAtual!.copyWith(
-        pecas: _movimentacaoAtual!.pecas
-            .where((peca) => peca.peca != pecaId)
-            .toList(),
-        totalPecas: _movimentacaoAtual!.totalPecas - 1,
-      );
-    } else if (_movimentacaoAtual?.status == 'Andamento') {
-      _movimentacaoAtual = _movimentacaoAtual!.copyWith(
-        pecas: _movimentacaoAtual!.pecas
-            .where((peca) => peca.peca != pecaId)
-            .toList(),
-        totalPecas: _movimentacaoAtual!.totalPecas - 1,
-        dataModificacao:
-            dataModificacao, // Atualiza a data de modificação localmente
+      // Sincroniza a exclusão da peça com o servidor
+      final response = await _servMovimentacao.excluirPecas(
+        idMov,
+        dataModificacao,
+        [pecaId], // Envia o ID da peça a ser excluída
       );
 
-      await _sqlite.deletar(
-        tabela: 'ESTOQUE_MAT_MOV_PECA',
-        id: {'peca': pecaId}, // Mapa para o ID
-        fk: {
-          'mov_sqlite': movimentacaoAtual!.movSqlite
-        }, // Mapa opcional para a FK
-      );
-
-      // Determina a cláusula WHERE e o valor correspondente
-      String whereCampo;
-      int whereValor;
-
-      if (movimentacaoAtual!.movServidor != null &&
-          movimentacaoAtual!.movServidor != 0) {
-        whereCampo = 'mov_servidor';
-        whereValor = movimentacaoAtual!.movServidor!;
-      } else {
-        whereCampo = 'mov_sqlite';
-        whereValor = movimentacaoAtual!.movSqlite;
-      }
-
-      // Atualiza o banco de dados local
-      await _sqlite.atualizar(
-        tabela: 'ESTOQUE_MAT_MOV',
-        valores: {
-          'total_pecas': movimentacaoAtual!.pecas.length,
-          'data_modificacao':
-              dataModificacao, // Atualiza a data de modificação no banco de dados local
-        },
-        whereClausula: {
-          whereCampo: whereValor,
-        },
-      );
-
-      // Sincronizar com o servidor em um bloco try-catch
-      try {
-        final servicoMovimentacao = ServMovimentacao();
-        final response = await servicoMovimentacao.excluirPecas(
-          _movimentacaoAtual!.movServidor ?? _movimentacaoAtual!.movSqlite,
-          dataModificacao, // Envia a data de modificação ao servidor
-          [pecaId],
+      if (response['status'] == 200 || response['status'] == 204) {
+        // Se a sincronização for bem-sucedida, remove a peça localmente da movimentação
+        _movimentacaoAtual = _movimentacaoAtual!.copyWith(
+          pecas: _movimentacaoAtual!.pecas
+              .where((peca) => peca.peca != pecaId)
+              .toList(),
+          totalPecas: _movimentacaoAtual!.totalPecas - 1,
+          dataModificacao: dataModificacao,
         );
 
-        if (response['status'] == 204) {
-          print('Peça removida e sincronizada com sucesso.');
-        } else {
-          print(
-              'Erro ao sincronizar a remoção com o servidor: ${response['message']}');
-        }
-      } catch (e) {
-        // Captura qualquer erro durante a sincronização com o servidor
-        print('Erro: $e');
-      }
-    }
+        // Atualiza o banco de dados local
+        await _sqlite.atualizar(
+          tabela: 'ESTOQUE_MAT_MOV',
+          valores: {
+            'total_pecas': _movimentacaoAtual!.pecas.length,
+            'data_modificacao':
+                dataModificacao, // Atualiza a data de modificação no banco
+          },
+          whereClausula: {colunaMov: idMov},
+        );
 
-    notifyListeners();
+        // Remove a peça do banco local
+        await _sqlite.deletar(
+          tabela: 'ESTOQUE_MAT_MOV_PECA',
+          id: {'peca': pecaId}, // Exclui a peça pelo ID
+          fk: {
+            'mov_sqlite': _movimentacaoAtual!.movSqlite
+          }, // Relaciona pela FK
+        );
+
+        print('Peça $pecaId removida e sincronizada com sucesso.');
+        notifyListeners();
+        return response;
+      } else {
+        // Se falhar, retorna o erro do servidor
+        print(
+            'Erro ao sincronizar a exclusão com o servidor: ${response['message']}');
+        notifyListeners();
+        return response;
+      }
+    } catch (e) {
+      notifyListeners();
+      throw Exception(e);
+    }
   }
 
   Future<bool> permissaoGravar() async {
