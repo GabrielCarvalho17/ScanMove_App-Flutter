@@ -110,8 +110,7 @@ class _NovaMovState extends State<NovaMov> with TickerProviderStateMixin {
         builder: (BuildContext context) {
           return CustomDialogo(
             titulo: 'Ação Impossível',
-            mensagem:
-                'Não é possível excluir uma peça de uma movimentação finalizada.',
+            mensagem: 'A movimentação já está finalizada.',
           );
         },
       );
@@ -355,41 +354,39 @@ class _NovaMovState extends State<NovaMov> with TickerProviderStateMixin {
               })),
             ],
           ),
-          floatingActionButton: statusFinalizada
-              ? null
-              : Stack(
-                  children: [
-                    if (_showScrollToTopButton)
-                      Positioned(
-                        left: 20,
-                        bottom: 0,
-                        child: BotaoRolarTopo(
-                          onPressed: () {
-                            _scrollController.animateTo(
-                              0,
-                              duration: Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          },
-                          heroTag: 'uniqueScrollTopButtonForNovaMov',
-                        ),
-                      ),
-                    Positioned(
-                      left: MediaQuery.of(context).size.width / 2 - 28,
-                      bottom: 0,
-                      child: BotaoAdicionarPeca(
-                        heroTag: 'uniqueAddPecaButtonForNovaMov',
-                      ),
-                    ),
-                    Positioned(
-                      right: 20,
-                      bottom: 0,
-                      child: BotaoFinalizar(
-                        heroTag: 'uniqueEncerrarButtonForNovaMov',
-                      ),
-                    ),
-                  ],
+          floatingActionButton: Stack(children: [
+            if (_showScrollToTopButton)
+              Positioned(
+                left: 20,
+                bottom: 0,
+                child: BotaoRolarTopo(
+                  onPressed: () {
+                    _scrollController.animateTo(
+                      0,
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  heroTag: 'uniqueScrollTopButtonForNovaMov',
                 ),
+              ),
+            if (!statusFinalizada) ...[
+              Positioned(
+                left: MediaQuery.of(context).size.width / 2 - 28,
+                bottom: 0,
+                child: BotaoAdicionarPeca(
+                  heroTag: 'uniqueAddPecaButtonForNovaMov',
+                ),
+              ),
+              Positioned(
+                right: 20,
+                bottom: 0,
+                child: BotaoFinalizar(
+                  heroTag: 'uniqueEncerrarButtonForNovaMov',
+                ),
+              ),
+            ],
+          ]),
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerFloat,
         ),
