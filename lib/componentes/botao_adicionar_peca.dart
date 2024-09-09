@@ -40,9 +40,6 @@ class BotaoAdicionarPeca extends StatelessWidget {
     bool loadingExibido = false;
     Timer? timer;
 
-    // Captura o tempo inicial
-    final inicio = DateTime.now();
-
     try {
       var result = await BarcodeScanner.scan();
 
@@ -89,13 +86,6 @@ class BotaoAdicionarPeca extends StatelessWidget {
         Navigator.of(context).pop();
       }
       _mostrarDialogoErro(context, 'Erro', 'Ocorreu um erro: ${e.toString()}');
-    } finally {
-      // Captura o tempo final e calcula a duração
-      final fim = DateTime.now();
-      final duracao = fim.difference(inicio);
-
-      // Imprime o tempo que a operação levou em segundos
-      print("A operação levou: ${duracao.inSeconds} segundos");
     }
   }
 
