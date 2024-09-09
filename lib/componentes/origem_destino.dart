@@ -55,7 +55,7 @@ class _OrigemDestinoState extends State<OrigemDestino> {
                         decoration: InputDecoration(
                           labelText: 'Origem',
                           labelStyle:
-                          TextStyle(color: Colors.white, fontSize: 18.0),
+                              TextStyle(color: Colors.white, fontSize: 18.0),
                           hintStyle: TextStyle(color: Colors.white70),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10.0),
@@ -87,7 +87,7 @@ class _OrigemDestinoState extends State<OrigemDestino> {
                         decoration: InputDecoration(
                           labelText: 'Destino',
                           labelStyle:
-                          TextStyle(color: Colors.white, fontSize: 18.0),
+                              TextStyle(color: Colors.white, fontSize: 18.0),
                           hintStyle: TextStyle(color: Colors.white70),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10.0),
@@ -123,19 +123,26 @@ class _OrigemDestinoState extends State<OrigemDestino> {
     );
   }
 
-  Future<void> _adicionarLocalizacao(BuildContext context, bool isOrigem) async {
+  Future<void> _adicionarLocalizacao(
+      BuildContext context, bool isOrigem) async {
+    final movimentacaoProvider =
+        Provider.of<ProvMovimentacao>(context, listen: false);
     final movimentacaoAtual = movimentacaoProvider.movimentacaoAtual;
 
     if (movimentacaoAtual?.status == 'Finalizada') {
-      _mostrarDialogoErro(context, 'Ação Impossível', 'A movimentação já está finalizada.');
+      _mostrarDialogoErro(
+          context, 'Ação Impossível', 'A movimentação já está finalizada.');
       return;
     }
 
     bool loadingExibido = false;
     Timer? timer;
+    final servicoLocalizacao =
+        ServLocalizacao(); // Instancia o serviço de localização
 
     try {
       var result = await BarcodeScanner.scan();
+
       if (result.rawContent.isNotEmpty) {
         timer = Timer(Duration(seconds: 1), () {
           loadingExibido = true;
@@ -152,40 +159,31 @@ class _OrigemDestinoState extends State<OrigemDestino> {
           );
         });
 
-        var resultado = await _servicoLocalizacao.fetchLocalizacao(result.rawContent);
+        // Chama o serviço para buscar a localização
+        var resultado =
+            await servicoLocalizacao.fetchLocalizacao(result.rawContent);
 
+        // Cancela o timer e fecha o loading se estiver ativo
         if (timer != null && timer.isActive) {
           timer.cancel();
         }
-
         if (loadingExibido && Navigator.canPop(context)) {
           Navigator.of(context).pop();
         }
 
-        switch (resultado['status']) {
-          case StatusLocalizacao.sucesso:
-            LocalizacaoModel localizacao = resultado['localizacao'];
-            if (isOrigem) {
-             await movimentacaoProvider.setOrigem(localizacao.localizacao);
-              movimentacaoProvider.setFilialOrigem(localizacao.filial);
-            } else {
-              movimentacaoProvider.setDestino(localizacao.localizacao);
-              movimentacaoProvider.setFilialDestino(localizacao.filial);
-            }
-            break;
-          case StatusLocalizacao.timeout:
-            _mostrarDialogoErro(context, 'Erro', 'O servidor não está respondendo no momento. Tente novamente mais tarde.');
-            break;
-          case StatusLocalizacao.semConexao:
-            _mostrarDialogoErro(context, 'Erro', 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.');
-            break;
-          case StatusLocalizacao.localizacaoNaoEncontrada:
-            _mostrarDialogoErro(context, 'Atenção', 'Localização não encontrada.');
-            break;
-          case StatusLocalizacao.erroServidor:
-          default:
-            _mostrarDialogoErro(context, 'Erro', 'Erro ao buscar dados da localização. Tente novamente mais tarde.');
-            break;
+        // Verifica o resultado do serviço
+        if (resultado['status'] == 200) {
+          LocalizacaoModel localizacao = resultado['localizacao'];
+          if (isOrigem) {
+            await movimentacaoProvider.setOrigem(localizacao.localizacao);
+            movimentacaoProvider.setFilialOrigem(localizacao.filial);
+          } else {
+            movimentacaoProvider.setDestino(localizacao.localizacao);
+            movimentacaoProvider.setFilialDestino(localizacao.filial);
+          }
+        } else {
+          _mostrarDialogoErro(
+              context, 'Erro', resultado['message'] ?? 'Erro desconhecido');
         }
       }
     } catch (e) {
@@ -193,15 +191,11 @@ class _OrigemDestinoState extends State<OrigemDestino> {
         Navigator.of(context).pop();
       }
       _mostrarDialogoErro(context, 'Erro', e.toString().split(': ').last);
-    } finally {
-      if (loadingExibido && Navigator.canPop(context)) {
-        Navigator.of(context).pop();
-        _mostrarDialogoErro(context, 'Erro', 'O servidor não está respondendo no momento. Tente novamente mais tarde.');
-      }
     }
   }
 
-  void _mostrarDialogoErro(BuildContext context, String titulo, String mensagem) {
+  void _mostrarDialogoErro(
+      BuildContext context, String titulo, String mensagem) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

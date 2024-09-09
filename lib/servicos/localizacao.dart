@@ -6,62 +6,74 @@ import 'package:AppEstoqueMP/modelos/localizacao.dart';
 import 'package:AppEstoqueMP/servicos/config.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
 
-enum StatusLocalizacao {
-  sucesso,
-  timeout,
-  semConexao,
-  erroServidor,
-  localizacaoNaoEncontrada,
-}
-
 class ServLocalizacao {
   final SQLite _dbHelper = SQLite();
 
   Future<Map<String, dynamic>> fetchLocalizacao(String localizacao) async {
     try {
-      // Obter a localização da API
-      final response = await _fetchLocalizacao(localizacao);
+      // Obter o token do banco de dados
+      final token = await _obterToken();
 
-      // Verificar o status da resposta
+      // Montar a URL para a requisição
+      final url = Uri.parse('${Config.baseUrl}/materiais/localizacao/$localizacao/');
+
+      // Fazer a requisição com timeout
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10), onTimeout: () {
+        return http.Response(
+          'O servidor demorou demais para responder. Tente novamente mais tarde.',
+          408,
+        );
+      });
+
+      // Tratar a resposta da requisição
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        // Verifica se o retorno é um objeto (Map) e se contém as chaves necessárias
-        if (data is Map<String, dynamic> && data.containsKey('localizacao')) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        if (data.isNotEmpty) {
           return {
-            'status': StatusLocalizacao.sucesso,
+            'status': 200,
+            'message': 'Localização encontrada com sucesso',
             'localizacao': LocalizacaoModel.fromJson(data),
           };
         } else {
           return {
-            'status': StatusLocalizacao.localizacaoNaoEncontrada,
+            'status': 404,
+            'message': 'Localização não encontrada',
           };
         }
       } else if (response.statusCode == 404) {
         return {
-          'status': StatusLocalizacao.localizacaoNaoEncontrada,
+          'status': 404,
+          'message': 'Localização não encontrada',
+        };
+      } else if (response.statusCode == 408) {
+        return {
+          'status': 408,
+          'message': 'O servidor demorou demais para responder',
         };
       } else {
         return {
-          'status': StatusLocalizacao.erroServidor,
+          'status': response.statusCode,
+          'message': 'Erro ao buscar localização',
+          'error': response.body,
         };
       }
-    } on TimeoutException {
-      return {
-        'status': StatusLocalizacao.timeout,
-      };
     } on SocketException {
       return {
-        'status': StatusLocalizacao.semConexao,
+        'status': 503,
+        'message': 'Sem conexão com a internet. Verifique sua conexão e tente novamente.',
       };
     } catch (e) {
-      return {
-        'status': StatusLocalizacao.erroServidor,
-        'mensagem': e.toString(),
-      };
+      throw Exception('Ocorreu um erro: $e');
     }
   }
 
-  Future<http.Response> _fetchLocalizacao(String localizacao) async {
+  Future<String> _obterToken() async {
     // Obter o usuário ativo do banco de dados
     final List<Map<String, dynamic>> users = await _dbHelper.listar(
       'USUARIO',
@@ -72,16 +84,7 @@ class ServLocalizacao {
       throw Exception('Usuário não encontrado no banco de dados.');
     }
 
-    // Obter o token do primeiro usuário encontrado
-    String token = users.first['access_token'];
-    final url = Uri.parse('${Config.baseUrl}/materiais/localizacao/$localizacao/');
-
-    // Fazer a requisição à API
-    return await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    ).timeout(Duration(seconds: 15)); // Define o timeout para a requisição
+    // Retornar o token do primeiro usuário encontrado
+    return users.first['access_token'];
   }
 }
