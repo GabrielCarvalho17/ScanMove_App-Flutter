@@ -6,62 +6,69 @@ import 'package:AppEstoqueMP/modelos/peca.dart';
 import 'package:AppEstoqueMP/servicos/config.dart';
 import 'package:AppEstoqueMP/servicos/sqlite.dart';
 
-enum StatusPeca {
-  sucesso,
-  timeout,
-  semConexao,
-  erroServidor,
-  pecaNaoEncontrada,
-}
-
 class ServPeca {
   final SQLite _dbHelper = SQLite();
 
   Future<Map<String, dynamic>> fetchPeca(String peca) async {
     try {
-      // Obter a peça da API
-      final response = await _fetchPeca(peca);
+      // Obter a peça da API com timeout de 10 segundos
+      final response = await http.get(
+        Uri.parse('${Config.baseUrl}/materiais/peca/$peca/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${await _obterToken()}',
+        },
+      ).timeout(const Duration(seconds: 10), onTimeout: () {
+        return http.Response(
+          'O servidor demorou demais para responder. Tente novamente mais tarde.',
+          408,
+        );
+      });
 
-      // Verificar o status da resposta
+      // Tratar a resposta da requisição
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-
         if (data.isNotEmpty) {
-          // Retornar a peça encontrada
           return {
-            'status': StatusPeca.sucesso,
-            'peca': PecaModel.fromJson(data),  // Converte o JSON para PecaModel
+            'status': 200,
+            'message': 'Peça encontrada com sucesso',
+            'peca': PecaModel.fromJson(data),
           };
         } else {
           return {
-            'status': StatusPeca.pecaNaoEncontrada,
+            'status': 404,
+            'message': 'Peça não encontrada',
           };
         }
-      } else if (response.statusCode == 404) {
+      } else if (response.statusCode == 204) {
         return {
-          'status': StatusPeca.pecaNaoEncontrada,
+          'status': 204,
+          'message': 'Nenhum conteúdo encontrado',
+        };
+      } else if (response.statusCode == 408) {
+        return {
+          'status': 408,
+          'message': 'Erro ao buscar peça: O servidor demorou demais para responder',
+          'error': response.body,
         };
       } else {
         return {
-          'status': StatusPeca.erroServidor,
+          'status': response.statusCode,
+          'message': 'Erro ao buscar peça',
+          'error': response.body,
         };
       }
-    } on TimeoutException {
-      return {
-        'status': StatusPeca.timeout,
-      };
     } on SocketException {
       return {
-        'status': StatusPeca.semConexao,
+        'status': 503,
+        'message': 'Sem conexão com a internet. Verifique sua conexão e tente novamente.',
       };
     } catch (e) {
-      return {
-        'status': StatusPeca.erroServidor,
-      };
+      throw Exception('Ocorreu um erro: $e');
     }
   }
 
-  Future<http.Response> _fetchPeca(String peca) async {
+  Future<String> _obterToken() async {
     // Obter o usuário ativo do banco de dados
     final List<Map<String, dynamic>> users = await _dbHelper.listar(
       'USUARIO',
@@ -72,16 +79,7 @@ class ServPeca {
       throw Exception('Usuário não encontrado no banco de dados.');
     }
 
-    // Obter o token do primeiro usuário encontrado
-    String token = users.first['access_token'];
-    final url = Uri.parse('${Config.baseUrl}/materiais/peca/$peca/');
-
-    // Fazer a requisição à API
-    return await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    ).timeout(Duration(seconds: 15)); // Define o timeout para a requisição
+    // Retornar o token do primeiro usuário encontrado
+    return users.first['access_token'];
   }
 }

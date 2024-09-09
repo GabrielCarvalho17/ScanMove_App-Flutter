@@ -35,14 +35,19 @@ class BotaoAdicionarPeca extends StatelessWidget {
 
   Future<void> _adicionarPeca(BuildContext context) async {
     final movimentacaoProvider =
-        Provider.of<ProvMovimentacao>(context, listen: false);
-    final servicoPeca = ServPeca();
+    Provider.of<ProvMovimentacao>(context, listen: false);
+    final servicoPeca = ServPeca(); // Instancia o serviço
     bool loadingExibido = false;
     Timer? timer;
 
+    // Captura o tempo inicial
+    final inicio = DateTime.now();
+
     try {
       var result = await BarcodeScanner.scan();
+
       if (result.rawContent.isNotEmpty) {
+        // Exibe o dialogo de loading após 1 segundo
         timer = Timer(Duration(seconds: 1), () {
           loadingExibido = true;
           showDialog(
@@ -58,54 +63,42 @@ class BotaoAdicionarPeca extends StatelessWidget {
           );
         });
 
+        // Chama o serviço para buscar a peça
         var resultado = await servicoPeca.fetchPeca(result.rawContent);
 
+        // Cancela o timer e fecha o loading se estiver ativo
         if (timer != null && timer.isActive) {
           timer.cancel();
         }
-
         if (loadingExibido && Navigator.canPop(context)) {
           Navigator.of(context).pop();
         }
 
-        switch (resultado['status']) {
-          case StatusPeca.sucesso:
-            final peca = resultado['peca'];
-            await movimentacaoProvider.adicionarPeca(peca.toJson());
-            print(peca.toJson());
-            print(movimentacaoProvider.toString());
-            break;
-          case StatusPeca.timeout:
-            _mostrarDialogoErro(context, 'Erro',
-                'O servidor não está respondendo no momento. Tente novamente mais tarde.');
-            break;
-          case StatusPeca.semConexao:
-            _mostrarDialogoErro(context, 'Erro',
-                'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.');
-            break;
-          case StatusPeca.pecaNaoEncontrada:
-            _mostrarDialogoErro(context, 'Atenção', 'Peça não encontrada.');
-            break;
-          case StatusPeca.erroServidor:
-          default:
-            _mostrarDialogoErro(context, 'Erro',
-                'Erro ao buscar dados da peça. Tente novamente mais tarde.');
-            break;
+        // Verifica o resultado do serviço
+        if (resultado['status'] == 200) {
+          final peca = resultado['peca'];
+          await movimentacaoProvider.adicionarPeca(peca.toJson());
+          print(peca.toJson());
+        } else {
+          _mostrarDialogoErro(
+              context, 'Erro', resultado['message'] ?? 'Erro desconhecido');
         }
       }
     } catch (e) {
       if (loadingExibido && Navigator.canPop(context)) {
         Navigator.of(context).pop();
       }
-      _mostrarDialogoErro(context, 'Erro', e.toString().split(': ').last);
+      _mostrarDialogoErro(context, 'Erro', 'Ocorreu um erro: ${e.toString()}');
     } finally {
-      if (loadingExibido && Navigator.canPop(context)) {
-        Navigator.of(context).pop();
-        _mostrarDialogoErro(context, 'Erro',
-            'O servidor não está respondendo no momento. Tente novamente mais tarde.');
-      }
+      // Captura o tempo final e calcula a duração
+      final fim = DateTime.now();
+      final duracao = fim.difference(inicio);
+
+      // Imprime o tempo que a operação levou em segundos
+      print("A operação levou: ${duracao.inSeconds} segundos");
     }
   }
+
 
   void _mostrarDialogoErro(
       BuildContext context, String titulo, String mensagem) {
