@@ -281,7 +281,7 @@ class _NovaMovState extends State<NovaMov> with TickerProviderStateMixin {
                         background: Container(
                           color: Theme.of(context).colorScheme.primary,
                           alignment: Alignment.centerRight,
-                          margin: EdgeInsets.only(bottom: 9, top: 3),
+                          margin: EdgeInsets.only(bottom: 9, top: 4),
                           padding: EdgeInsets.symmetric(horizontal: 20.0),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -337,7 +337,7 @@ class _NovaMovState extends State<NovaMov> with TickerProviderStateMixin {
                             ],
                           ),
                         ),
-                        child: Peca(
+                        child: PecaCard(
                           peca: item.peca,
                           partida: item.partida ?? '',
                           material: item.material,

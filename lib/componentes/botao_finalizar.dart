@@ -50,7 +50,7 @@ class BotaoFinalizar extends StatelessWidget {
       if (movimentacaoAtual.status == 'Inclusão') {
         final resposta = await _mostrarDialogoConfirmacao(
           context,
-          'Deseja gravar e finalizar a movimentação?',
+          'Deseja apenas gravar ou finalizar a movimentação?',
           'Gravar',
           'Finalizar',
         );
@@ -91,8 +91,6 @@ class BotaoFinalizar extends StatelessWidget {
               Navigator.of(context).pushNamed('/hist_mov'); // Navega para a tela de histórico
             },
           );
-        } else {
-          _mostrarResultadoDialogo(context, "A movimentação não foi finalizada.");
         }
       } else {
         _mostrarResultadoDialogo(context, "Status desconhecido.");

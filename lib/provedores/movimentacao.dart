@@ -456,13 +456,30 @@ class ProvMovimentacao with ChangeNotifier {
 
   // Método para remover peças da movimentação atual
   Future<Map<String, dynamic>> removerPeca(String pecaId) async {
+    // Verifica se a movimentação atual não possui nem movServidor nem movSqlite
+    if (_movimentacaoAtual!.movServidor == 0 && _movimentacaoAtual!.movSqlite == 0) {
+      // Remove a peça da lista de peças apenas na instância, sem sincronização com servidor ou banco
+      _movimentacaoAtual = _movimentacaoAtual!.copyWith(
+        pecas: _movimentacaoAtual!.pecas.where((peca) => peca.peca != pecaId).toList(),
+        totalPecas: _movimentacaoAtual!.totalPecas - 1,
+      );
+
+      print('Peça $pecaId removida da movimentação local.');
+
+      // Notifica os listeners para que a interface seja atualizada
+      notifyListeners();
+
+      // Retorna uma resposta simulada de sucesso
+      return {'status': 200, 'message': 'Peça removida da movimentação local.'};
+    }
+
+    // Continuação do código original se movServidor ou movSqlite existir
     final int idMov = _movimentacaoAtual!.movServidor != 0
         ? _movimentacaoAtual!.movServidor!
         : _movimentacaoAtual!.movSqlite;
     final String colunaMov =
-        _movimentacaoAtual!.movServidor != 0 ? 'mov_servidor' : 'mov_sqlite';
-    final String dataModificacao =
-        DateTime.now().toIso8601String(); // Data de modificação atual
+    _movimentacaoAtual!.movServidor != 0 ? 'mov_servidor' : 'mov_sqlite';
+    final String dataModificacao = DateTime.now().toIso8601String(); // Data de modificação atual
 
     try {
       print('Removendo a peça $pecaId da movimentação $idMov ($colunaMov)');
@@ -477,9 +494,7 @@ class ProvMovimentacao with ChangeNotifier {
       if (response['status'] == 200 || response['status'] == 204) {
         // Se a sincronização for bem-sucedida, remove a peça localmente da movimentação
         _movimentacaoAtual = _movimentacaoAtual!.copyWith(
-          pecas: _movimentacaoAtual!.pecas
-              .where((peca) => peca.peca != pecaId)
-              .toList(),
+          pecas: _movimentacaoAtual!.pecas.where((peca) => peca.peca != pecaId).toList(),
           totalPecas: _movimentacaoAtual!.totalPecas - 1,
           dataModificacao: dataModificacao,
         );
@@ -489,8 +504,7 @@ class ProvMovimentacao with ChangeNotifier {
           tabela: 'ESTOQUE_MAT_MOV',
           valores: {
             'total_pecas': _movimentacaoAtual!.pecas.length,
-            'data_modificacao':
-                dataModificacao, // Atualiza a data de modificação no banco
+            'data_modificacao': dataModificacao, // Atualiza a data de modificação no banco
           },
           whereClausula: {colunaMov: idMov},
         );
@@ -499,9 +513,7 @@ class ProvMovimentacao with ChangeNotifier {
         await _sqlite.deletar(
           tabela: 'ESTOQUE_MAT_MOV_PECA',
           id: {'peca': pecaId}, // Exclui a peça pelo ID
-          fk: {
-            'mov_sqlite': _movimentacaoAtual!.movSqlite
-          }, // Relaciona pela FK
+          fk: {'mov_sqlite': _movimentacaoAtual!.movSqlite}, // Relaciona pela FK
         );
 
         print('Peça $pecaId removida e sincronizada com sucesso.');
@@ -509,8 +521,7 @@ class ProvMovimentacao with ChangeNotifier {
         return response;
       } else {
         // Se falhar, retorna o erro do servidor
-        print(
-            'Erro ao sincronizar a exclusão com o servidor: ${response['message']}');
+        print('Erro ao sincronizar a exclusão com o servidor: ${response['message']}');
         notifyListeners();
         return response;
       }
@@ -519,6 +530,7 @@ class ProvMovimentacao with ChangeNotifier {
       throw Exception(e);
     }
   }
+
 
   Future<bool> permissaoGravar() async {
     if (movimentacaoAtual == null) {

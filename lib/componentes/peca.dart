@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-class Peca extends StatelessWidget {
+class PecaCard extends StatelessWidget {
   final String peca;
-  final String partida;
+  final String? partida;
   final String material;
   final String descMaterial;
   final String cor;
@@ -10,10 +10,10 @@ class Peca extends StatelessWidget {
   final String unidade;
   final double qtde;
 
-  const Peca({
+  const PecaCard({
     Key? key,
     required this.peca,
-    required this.partida,
+    this.partida,
     required this.material,
     required this.descMaterial,
     required this.cor,
@@ -38,7 +38,9 @@ class Peca extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '$peca - $partida',
+                partida != null && partida!.isNotEmpty
+                    ? '$peca - $partida'
+                    : '$peca',  // Exibe apenas peça se partida for nula ou vazia
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               SizedBox(height: 10),

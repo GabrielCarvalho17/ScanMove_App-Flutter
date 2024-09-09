@@ -53,7 +53,7 @@ class MovimentacaoCard extends StatelessWidget {
         );
       },
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(15, 0, 15, 0),
+        padding: const EdgeInsets.fromLTRB(15, 0, 15, 6),
         child: Card(
           color: Colors.white,
           elevation: 4,

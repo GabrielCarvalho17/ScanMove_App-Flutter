@@ -107,6 +107,7 @@ class _HistMovState extends State<HistMov> with TickerProviderStateMixin {
       removeBottom: true,
       context: context,
       child: Scaffold(
+        backgroundColor: Color(0xFFf3f3f3),
         appBar: CustomAppBar(titleText: 'Histórico do dia', customHeight: 70),
         drawer: CustomDrawer(),
         body: Consumer<ProvMovimentacao>(
@@ -208,6 +209,7 @@ class _HistMovState extends State<HistMov> with TickerProviderStateMixin {
                       color: Theme.of(context).colorScheme.primary,
                       alignment: Alignment.centerRight,
                       padding: EdgeInsets.symmetric(horizontal: 20.0),
+                      margin: EdgeInsets.only(top: 5.0, bottom: 9.0),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.end,
